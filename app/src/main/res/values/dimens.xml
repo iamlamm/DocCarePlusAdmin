@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="page_margin">16dp</dimen>
+    <dimen name="page_offset">30dp</dimen>
+    <dimen name="calendar_item_spacing">8dp</dimen>
+    <dimen name="margin_medium">4dp</dimen>
+    <dimen name="margin_small">2dp</dimen>
+    <dimen name="notification_item_spacing">16dp</dimen>
+</resources> 

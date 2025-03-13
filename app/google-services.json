@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1052284645339",
+    "firebase_url": "https://doccareplus-default-rtdb.firebaseio.com",
+    "project_id": "doccareplus",
+    "storage_bucket": "doccareplus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1052284645339:android:a18edd6a6dcadbfaba01fe",
+        "android_client_info": {
+          "package_name": "com.healthtech.doccareplusadmin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNtkv6ZwNarfzmkNbkIrb_NFwVAJA-5nY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

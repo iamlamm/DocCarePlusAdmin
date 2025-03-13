@@ -1,0 +1,14 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+/res/anim
+/res/color
+/res/drawable
+/res/drawable-hdpi
+/res/drawable-mdpi
+/res/drawable-xhdpi
+/res/drawable-xxhdpi
+/res/mipmap-anydpi
+/res/mipmap-mdpi
+/res/mipmap-xhdpi
+/res/mipmap-xxhdpi
+/res/mipmap-xxxhdpi
+/res/xml

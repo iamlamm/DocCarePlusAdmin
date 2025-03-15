@@ -23,7 +23,7 @@ class DoctorLocalDataSourceImpl @Inject constructor(
         doctorDao.updateDoctor(doctor)
     }
 
-    override suspend fun deleteDoctor(doctorId: Int) {
+    override suspend fun deleteDoctor(doctorId: String) {
         doctorDao.deleteDoctor(doctorId)
     }
 
@@ -31,6 +31,6 @@ class DoctorLocalDataSourceImpl @Inject constructor(
         doctorDao.deleteAllDoctors()
     }
 
-    override suspend fun getDoctorById(doctorId: Int): DoctorEntity? = 
+    override suspend fun getDoctorById(doctorId: String): DoctorEntity? =
         doctorDao.getDoctorById(doctorId)
 }

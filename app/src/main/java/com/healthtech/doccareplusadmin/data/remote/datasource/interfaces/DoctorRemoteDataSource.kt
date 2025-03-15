@@ -7,6 +7,6 @@ interface DoctorRemoteDataSource {
     fun getDoctors(): Flow<List<Doctor>>
     suspend fun addDoctor(doctor: Doctor): Result<Unit>
     suspend fun updateDoctor(doctor: Doctor): Result<Unit>
-    suspend fun deleteDoctor(doctorId: Int): Result<Unit>
-    suspend fun getDoctorById(doctorId: Int): Result<Doctor>
+    suspend fun deleteDoctor(doctorId: String): Result<Unit>
+    suspend fun getDoctorById(doctorId: String): Result<Doctor>
 }

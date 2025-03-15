@@ -21,7 +21,7 @@ class DoctorDiffCallback(
         val newItem = newList[newItemPosition]
         return oldItem.name == newItem.name &&
                 oldItem.specialty == newItem.specialty &&
-                oldItem.image == newItem.image &&
+                oldItem.avatar == newItem.avatar &&
                 oldItem.rating == newItem.rating &&
                 oldItem.reviews == newItem.reviews &&
                 oldItem.fee == newItem.fee

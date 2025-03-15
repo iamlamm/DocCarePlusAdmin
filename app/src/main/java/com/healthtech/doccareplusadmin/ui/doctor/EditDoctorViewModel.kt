@@ -68,25 +68,25 @@ class EditDoctorViewModel @Inject constructor(
         }
     }
 
-    fun loadDoctor(doctorId: Int?) {
+    fun loadDoctor(doctorId: String?) {
         // Reset các state để tránh hiển thị sai khi tạo fragment mới
         _uploadProgress.value = 0
         _saveState.value = UiState.Idle
+        _selectedImageUri.value = null
         
-        if (doctorId == null || doctorId <= 0) {
+        if (doctorId == null || doctorId.isEmpty()) {
             // Đây là trường hợp thêm mới
             isNewDoctor = true
-            // Tạo ID mới sử dụng timestamp đảm bảo luôn dương và trong phạm vi Int
-            val timestamp = System.currentTimeMillis()
-            val generatedId = (timestamp % Int.MAX_VALUE).toInt() // Đảm bảo ID luôn dương
+            // Tạo ID mới sử dụng UUID
+            val generatedId = java.util.UUID.randomUUID().toString()
             
             val emptyDoctor = Doctor(
                 id = generatedId,
                 name = "",
                 specialty = "",
-                image = Constants.URL_DOCTOR_DEFAULT,
-                rating = 0.0,
-                reviews = 0,
+                avatar = Constants.URL_DOCTOR_DEFAULT,
+                rating = 0F,
+                reviews = 0L,
                 fee = 0.0,
                 biography = "",
                 categoryId = 0,
@@ -168,7 +168,7 @@ class EditDoctorViewModel @Inject constructor(
                 val imageUrl = _selectedImageUri.value?.let { uri ->
                     val fileName = "doctor_${System.currentTimeMillis()}"
                     storageRepository.uploadDoctorImage(uri, fileName).getOrNull()
-                } ?: currentDoctor.image
+                } ?: currentDoctor.avatar
 
                 val updatedDoctor = currentDoctor.copy(
                     name = name,
@@ -182,7 +182,7 @@ class EditDoctorViewModel @Inject constructor(
                     emergencyContact = emergencyContact,
                     address = address,
                     available = available,
-                    image = imageUrl
+                    avatar = imageUrl
                 )
 
                 val result = if (isNewDoctor) {

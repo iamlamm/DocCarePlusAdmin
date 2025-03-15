@@ -17,9 +17,9 @@ class DoctorRemoteDataSourceImpl @Inject constructor(
     override suspend fun updateDoctor(doctor: Doctor): Result<Unit> = 
         firebaseApi.updateDoctor(doctor)
 
-    override suspend fun deleteDoctor(doctorId: Int): Result<Unit> = 
+    override suspend fun deleteDoctor(doctorId: String): Result<Unit> =
         firebaseApi.deleteDoctor(doctorId)
 
-    override suspend fun getDoctorById(doctorId: Int): Result<Doctor> = 
+    override suspend fun getDoctorById(doctorId: String): Result<Doctor> =
         firebaseApi.getDoctorById(doctorId)
 }

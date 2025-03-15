@@ -6,17 +6,18 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "doctors")
 data class DoctorEntity(
     @PrimaryKey
-    val id: Int,
+    val id: String,
     val code: String,
     val name: String,
     val specialty: String,
     val categoryId: Int,
-    val rating: Double,
-    val reviews: Int,
+    val rating: Float,
+    val reviews: Long,
     val fee: Double,
-    val image: String,
+    val avatar: String,
     val available: Boolean,
     val biography: String,
+    val role: String,
     val email: String,
     val phoneNumber: String,
     val emergencyContact: String,

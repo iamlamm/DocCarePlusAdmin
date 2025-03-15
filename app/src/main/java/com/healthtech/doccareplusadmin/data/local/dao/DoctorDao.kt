@@ -23,11 +23,11 @@ interface DoctorDao {
     suspend fun updateDoctor(doctor: DoctorEntity)
 
     @Query("DELETE FROM doctors WHERE id = :doctorId")
-    suspend fun deleteDoctor(doctorId: Int)
+    suspend fun deleteDoctor(doctorId: String)
 
     @Query("DELETE FROM doctors")
     suspend fun deleteAllDoctors()
 
     @Query("SELECT * FROM doctors WHERE id = :doctorId")
-    suspend fun getDoctorById(doctorId: Int): DoctorEntity?
+    suspend fun getDoctorById(doctorId: String): DoctorEntity?
 }

@@ -4,14 +4,14 @@ import android.util.Log
 import com.healthtech.doccareplusadmin.data.local.datasource.impl.DoctorLocalDataSourceImpl
 import com.healthtech.doccareplusadmin.domain.model.Doctor
 import com.healthtech.doccareplusadmin.data.remote.datasource.impl.DoctorRemoteDataSourceImpl
-import com.healthtech.doccareplusadmin.domain.mapper.toDoctor
-import com.healthtech.doccareplusadmin.domain.mapper.toDoctorEntity
 import com.healthtech.doccareplusadmin.domain.repository.DoctorRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import toDoctor
+import toDoctorEntity
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -135,7 +135,7 @@ class DoctorRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteDoctor(doctorId: Int): Result<Unit> {
+    override suspend fun deleteDoctor(doctorId: String): Result<Unit> {
         return try {
             // Xóa từ remote trước
             remoteDataSource.deleteDoctor(doctorId).onSuccess {
@@ -147,7 +147,7 @@ class DoctorRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getDoctorById(doctorId: Int): Result<Doctor> {
+    override suspend fun getDoctorById(doctorId: String): Result<Doctor> {
         return try {
             // Thử lấy từ local trước
             localDataSource.getDoctorById(doctorId)?.let {

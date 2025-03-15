@@ -15,7 +15,8 @@ import com.healthtech.doccareplusadmin.data.local.entity.UserEntity
 
 @Database(
     entities = [CategoryEntity::class, DoctorEntity::class, UserEntity::class, TimeSlotEntity::class],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
 @TypeConverters(TimePeriodConverter::class)
 abstract class AppDataBase : RoomDatabase() {

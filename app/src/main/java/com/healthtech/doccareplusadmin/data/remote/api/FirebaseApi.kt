@@ -13,6 +13,7 @@ import com.healthtech.doccareplusadmin.domain.model.TimeSlot
 import com.healthtech.doccareplusadmin.domain.model.TimePeriod
 import com.healthtech.doccareplusadmin.domain.model.User
 import com.healthtech.doccareplusadmin.domain.model.UserRole
+import com.healthtech.doccareplusadmin.utils.Constants
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -37,18 +38,23 @@ class FirebaseApi @Inject constructor(
                 val categoryList = mutableListOf<Category>()
                 snapshot.children.forEach { categorySnapshot ->
                     val id = categorySnapshot.key ?: return@forEach
-                    val name = categorySnapshot.child("name").getValue(String::class.java) ?: return@forEach
-                    val icon = categorySnapshot.child("icon").getValue(String::class.java) ?: return@forEach
-                    val description = categorySnapshot.child("description").getValue(String::class.java)
+                    val name = categorySnapshot.child("name").getValue(String::class.java)
+                        ?: return@forEach
+                    val icon = categorySnapshot.child("icon").getValue(String::class.java)
+                        ?: return@forEach
+                    val description =
+                        categorySnapshot.child("description").getValue(String::class.java)
                     val code = categorySnapshot.child("code").getValue(String::class.java)
-                    
-                    categoryList.add(Category(
-                        id = id.toInt(),
-                        name = name, 
-                        icon = icon,
-                        description = description ?: "",
-                        code = code ?: ""
-                    ))
+
+                    categoryList.add(
+                        Category(
+                            id = id.toInt(),
+                            name = name,
+                            icon = icon,
+                            description = description ?: "",
+                            code = code ?: ""
+                        )
+                    )
                 }
                 trySend(categoryList)
             }
@@ -81,13 +87,15 @@ class FirebaseApi @Inject constructor(
             val code = categorySnapshot.child("code").getValue(String::class.java)
 
             if (name != null && icon != null) {
-                Result.success(Category(
-                    id = categoryId.toInt(),  // Giữ nguyên ID dạng String
-                    name = name, 
-                    icon = icon,
-                    description = description ?: "",
-                    code = code ?: ""
-                ))
+                Result.success(
+                    Category(
+                        id = categoryId.toInt(),  // Giữ nguyên ID dạng String
+                        name = name,
+                        icon = icon,
+                        description = description ?: "",
+                        code = code ?: ""
+                    )
+                )
             } else {
                 Result.failure(Exception("Invalid category data"))
             }
@@ -100,10 +108,10 @@ class FirebaseApi @Inject constructor(
     suspend fun addCategory(category: Category): Result<Unit> {
         return try {
             val categoriesRef = database.getReference("categories")
-            
+
             // Tạo một key mới nếu id chưa được cung cấp
-            val categoryId = category.id ?: categoriesRef.push().key ?: 
-                throw Exception("Failed to generate category ID")
+            val categoryId = category.id ?: categoriesRef.push().key
+            ?: throw Exception("Failed to generate category ID")
 
             // Tạo map chứa đầy đủ dữ liệu category với kiểu dữ liệu phù hợp
             val categoryData = mapOf(
@@ -114,7 +122,7 @@ class FirebaseApi @Inject constructor(
                     "code" to (category.code ?: "")
                 )
             )
-            
+
             // Update vào database
             categoriesRef.updateChildren(categoryData).await()
             Result.success(Unit)
@@ -126,11 +134,10 @@ class FirebaseApi @Inject constructor(
 
     suspend fun updateCategory(category: Category): Result<Unit> {
         return try {
-            val categoryId = category.id ?: 
-                throw Exception("Category ID is required")
+            val categoryId = category.id ?: throw Exception("Category ID is required")
 
             val categoriesRef = database.getReference("categories")
-            
+
             // Kiểm tra category tồn tại
             val snapshot = categoriesRef.get().await()
             if (!snapshot.hasChild(categoryId.toString())) {
@@ -144,7 +151,7 @@ class FirebaseApi @Inject constructor(
                 "$categoryId/description" to (category.description ?: ""),
                 "$categoryId/code" to (category.code ?: "")
             )
-            
+
             categoriesRef.updateChildren(updates).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -156,7 +163,7 @@ class FirebaseApi @Inject constructor(
     suspend fun deleteCategory(categoryId: String): Result<Unit> {
         return try {
             val categoriesRef = database.getReference("categories")
-            
+
             // Kiểm tra category tồn tại
             val snapshot = categoriesRef.get().await()
             if (!snapshot.hasChild(categoryId)) {
@@ -167,7 +174,7 @@ class FirebaseApi @Inject constructor(
             val updates = mapOf<String, Any?>(
                 categoryId to null
             )
-            
+
             categoriesRef.updateChildren(updates).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -181,43 +188,135 @@ class FirebaseApi @Inject constructor(
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val doctorList = mutableListOf<Doctor>()
+
+                // Duyệt qua các doctor (giờ là object thay vì array)
                 for (doctorSnapshot in snapshot.children) {
-                    doctorSnapshot.getValue(Doctor::class.java)?.let { doctor ->
-                        doctorList.add(doctor)
+                    val id = doctorSnapshot.key ?: continue
+
+                    try {
+                        // Đọc các thuộc tính của doctor
+                        val name = doctorSnapshot.child("name").getValue(String::class.java) ?: ""
+                        val specialty =
+                            doctorSnapshot.child("specialty").getValue(String::class.java) ?: ""
+                        val avatar = doctorSnapshot.child("avatar").getValue(String::class.java)
+                            ?: Constants.URL_DOCTOR_DEFAULT
+                        val rating =
+                            doctorSnapshot.child("rating").getValue(Double::class.java)?.toFloat()
+                                ?: 0F
+                        val reviews =
+                            doctorSnapshot.child("reviews").getValue(Long::class.java) ?: 0
+                        val fee = doctorSnapshot.child("fee").getValue(Double::class.java) ?: 0.0
+                        val biography =
+                            doctorSnapshot.child("biography").getValue(String::class.java) ?: ""
+                        val categoryId =
+                            doctorSnapshot.child("categoryId").getValue(Long::class.java)?.toInt()
+                                ?: 0
+                        val code = doctorSnapshot.child("code").getValue(String::class.java) ?: ""
+                        val email = doctorSnapshot.child("email").getValue(String::class.java) ?: ""
+                        val phoneNumber =
+                            doctorSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
+                        val emergencyContact =
+                            doctorSnapshot.child("emergencyContact").getValue(String::class.java)
+                                ?: ""
+                        val address =
+                            doctorSnapshot.child("address").getValue(String::class.java) ?: ""
+                        val available =
+                            doctorSnapshot.child("available").getValue(Boolean::class.java) ?: true
+
+                        // Tạo đối tượng Doctor và thêm vào danh sách
+                        doctorList.add(
+                            Doctor(
+                                id = id,
+                                name = name,
+                                specialty = specialty,
+                                avatar = avatar,
+                                rating = rating,
+                                reviews = reviews,
+                                fee = fee,
+                                biography = biography,
+                                categoryId = categoryId,
+                                code = code,
+                                email = email,
+                                phoneNumber = phoneNumber,
+                                emergencyContact = emergencyContact,
+                                address = address,
+                                available = available
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Log.e("FirebaseApi", "Error parsing doctor data: ${e.message}")
                     }
                 }
-                // Gửi danh sách doctor mới vào Flow
-                trySend(doctorList)
+
+                // Loại bỏ trùng lặp và gửi dữ liệu
+                val uniqueDoctors = doctorList.distinctBy { it.id }
+                if (uniqueDoctors.size != doctorList.size) {
+                    Log.w(
+                        "FirebaseApi",
+                        "Detected duplicates in doctors data: ${doctorList.size} -> ${uniqueDoctors.size}"
+                    )
+                }
+                trySend(uniqueDoctors)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ERROR LOADING DOCTOR", error.message)
+                Log.e("ERROR LOADING DOCTORS", error.message)
             }
         }
-        // Đăng ký listener với Firebase
+
         doctorsRef.addValueEventListener(listener)
-        // Khi Flow bị hủy, remove listener để tránh memory leak
         awaitClose {
             doctorsRef.removeEventListener(listener)
             println("Flow getDoctors đóng")
         }
     }
 
-    suspend fun getDoctorById(doctorId: Int): Result<Doctor> {
+    suspend fun getDoctorById(doctorId: String): Result<Doctor> {
         return try {
             val snapshot = database.getReference("doctors")
+                .child(doctorId)
                 .get()
                 .await()
 
-            if (!snapshot.hasChild(doctorId.toString())) {
+            if (!snapshot.exists()) {
                 return Result.failure(Exception("Doctor not found"))
             }
 
-            val doctorSnapshot = snapshot.child(doctorId.toString())
-            val doctor = doctorSnapshot.getValue(Doctor::class.java)
-            
-            if (doctor != null) {
-                Result.success(doctor)
+            val name = snapshot.child("name").getValue(String::class.java)
+            val specialty = snapshot.child("specialty").getValue(String::class.java)
+            val avatar = snapshot.child("avatar").getValue(String::class.java)
+            val rating = snapshot.child("rating").getValue(Double::class.java)?.toFloat() ?: 0F
+            val reviews = snapshot.child("reviews").getValue(Long::class.java)
+            val fee = snapshot.child("fee").getValue(Double::class.java)
+            val biography = snapshot.child("biography").getValue(String::class.java)
+            val categoryId = snapshot.child("categoryId").getValue(Long::class.java)?.toInt()
+            val code = snapshot.child("code").getValue(String::class.java)
+            val email = snapshot.child("email").getValue(String::class.java)
+            val phoneNumber = snapshot.child("phoneNumber").getValue(String::class.java)
+            val emergencyContact = snapshot.child("emergencyContact").getValue(String::class.java)
+            val address = snapshot.child("address").getValue(String::class.java)
+            val available = snapshot.child("available").getValue(Boolean::class.java)
+
+            if (name != null && specialty != null) {
+                Result.success(
+                    Doctor(
+                        id = doctorId,
+                        name = name,
+                        specialty = specialty,
+                        avatar = avatar ?: Constants.URL_DOCTOR_DEFAULT,
+                        rating = rating,
+                        reviews = reviews ?: 0,
+                        fee = fee ?: 0.0,
+                        biography = biography ?: "",
+                        categoryId = categoryId ?: 0,
+                        code = code ?: "",
+                        email = email ?: "",
+                        phoneNumber = phoneNumber ?: "",
+                        emergencyContact = emergencyContact ?: "",
+                        address = address ?: "",
+                        available = available ?: true
+                    )
+                )
             } else {
                 Result.failure(Exception("Invalid doctor data"))
             }
@@ -230,34 +329,31 @@ class FirebaseApi @Inject constructor(
     suspend fun addDoctor(doctor: Doctor): Result<Unit> {
         return try {
             val doctorsRef = database.getReference("doctors")
-            
-            // Tạo một key mới nếu id chưa được cung cấp
-            val doctorId = doctor.id.takeIf { it > 0 } ?: 
-                (doctorsRef.push().key?.toIntOrNull() ?: throw Exception("Failed to generate doctor ID"))
-            
-            // Map thông tin bác sĩ
+
+            // Sử dụng ID từ doctor hoặc tạo ID mới nếu chưa có
+            val doctorId = doctor.id.takeIf { it.isNotEmpty() } ?: doctorsRef.push().key
+            ?: throw Exception("Failed to generate doctor ID")
+
+            // Tạo map chứa dữ liệu doctor
             val doctorData = mapOf(
-                doctorId.toString() to mapOf(
-                    "id" to doctorId,
-                    "name" to doctor.name,
-                    "code" to doctor.code,
-                    "specialty" to doctor.specialty,
-                    "categoryId" to doctor.categoryId,
-                    "rating" to doctor.rating,
-                    "reviews" to doctor.reviews,
-                    "fee" to doctor.fee,
-                    "image" to doctor.image,
-                    "available" to doctor.available,
-                    "biography" to doctor.biography,
-                    "email" to doctor.email,
-                    "phoneNumber" to doctor.phoneNumber,
-                    "emergencyContact" to doctor.emergencyContact,
-                    "address" to doctor.address
-                )
+                "name" to doctor.name,
+                "specialty" to doctor.specialty,
+                "avatar" to doctor.avatar,
+                "rating" to doctor.rating,
+                "reviews" to doctor.reviews,
+                "fee" to doctor.fee,
+                "biography" to doctor.biography,
+                "categoryId" to doctor.categoryId,
+                "code" to doctor.code,
+                "email" to doctor.email,
+                "phoneNumber" to doctor.phoneNumber,
+                "emergencyContact" to doctor.emergencyContact,
+                "address" to doctor.address,
+                "available" to doctor.available
             )
-            
-            // Update vào database
-            doctorsRef.updateChildren(doctorData).await()
+
+            // Thêm doctor vào database
+            doctorsRef.child(doctorId).setValue(doctorData).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FirebaseApi", "Error adding doctor: ${e.message}")
@@ -267,36 +363,36 @@ class FirebaseApi @Inject constructor(
 
     suspend fun updateDoctor(doctor: Doctor): Result<Unit> {
         return try {
-            val doctorId = doctor.id.takeIf { it > 0 } ?:
-                throw Exception("Doctor ID is required")
+            val doctorId =
+                doctor.id.takeIf { it.isNotEmpty() } ?: throw Exception("Doctor ID is required")
 
             val doctorsRef = database.getReference("doctors")
-            
+
             // Kiểm tra doctor tồn tại
-            val snapshot = doctorsRef.get().await()
-            if (!snapshot.hasChild(doctorId.toString())) {
+            val snapshot = doctorsRef.child(doctorId).get().await()
+            if (!snapshot.exists()) {
                 return Result.failure(Exception("Doctor not found"))
             }
 
-            // Cập nhật đầy đủ dữ liệu
-            val updates = mapOf(
-                "$doctorId/name" to doctor.name,
-                "$doctorId/code" to doctor.code,
-                "$doctorId/specialty" to doctor.specialty,
-                "$doctorId/categoryId" to doctor.categoryId,
-                "$doctorId/rating" to doctor.rating,
-                "$doctorId/reviews" to doctor.reviews,
-                "$doctorId/fee" to doctor.fee,
-                "$doctorId/image" to doctor.image,
-                "$doctorId/available" to doctor.available,
-                "$doctorId/biography" to doctor.biography,
-                "$doctorId/email" to doctor.email,
-                "$doctorId/phoneNumber" to doctor.phoneNumber,
-                "$doctorId/emergencyContact" to doctor.emergencyContact,
-                "$doctorId/address" to doctor.address
+            // Cập nhật dữ liệu
+            val doctorData = mapOf(
+                "name" to doctor.name,
+                "specialty" to doctor.specialty,
+                "avatar" to doctor.avatar,
+                "rating" to doctor.rating,
+                "reviews" to doctor.reviews,
+                "fee" to doctor.fee,
+                "biography" to doctor.biography,
+                "categoryId" to doctor.categoryId,
+                "code" to doctor.code,
+                "email" to doctor.email,
+                "phoneNumber" to doctor.phoneNumber,
+                "emergencyContact" to doctor.emergencyContact,
+                "address" to doctor.address,
+                "available" to doctor.available
             )
-            
-            doctorsRef.updateChildren(updates).await()
+
+            doctorsRef.child(doctorId).updateChildren(doctorData).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FirebaseApi", "Error updating doctor: ${e.message}")
@@ -304,22 +400,18 @@ class FirebaseApi @Inject constructor(
         }
     }
 
-    suspend fun deleteDoctor(doctorId: Int): Result<Unit> {
+    suspend fun deleteDoctor(doctorId: String): Result<Unit> {
         return try {
             val doctorsRef = database.getReference("doctors")
-            
+
             // Kiểm tra doctor tồn tại
-            val snapshot = doctorsRef.get().await()
-            if (!snapshot.hasChild(doctorId.toString())) {
+            val snapshot = doctorsRef.child(doctorId).get().await()
+            if (!snapshot.exists()) {
                 return Result.failure(Exception("Doctor not found"))
             }
 
             // Xóa doctor
-            val updates = mapOf<String, Any?>(
-                doctorId.toString() to null
-            )
-            
-            doctorsRef.updateChildren(updates).await()
+            doctorsRef.child(doctorId).removeValue().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FirebaseApi", "Error deleting doctor: ${e.message}")
@@ -425,9 +517,12 @@ class FirebaseApi @Inject constructor(
                     val id = userSnapshot.key ?: continue
                     val name = userSnapshot.child("name").getValue(String::class.java) ?: continue
                     val email = userSnapshot.child("email").getValue(String::class.java) ?: continue
-                    val phoneNumber = userSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
-                    val role = userSnapshot.child("role").getValue(String::class.java) ?: UserRole.PATIENT.name
-                    val createdAt = userSnapshot.child("createdAt").getValue(Long::class.java) ?: System.currentTimeMillis()
+                    val phoneNumber =
+                        userSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
+                    val role = userSnapshot.child("role").getValue(String::class.java)
+                        ?: UserRole.PATIENT.name
+                    val createdAt = userSnapshot.child("createdAt").getValue(Long::class.java)
+                        ?: System.currentTimeMillis()
                     val avatar = userSnapshot.child("avatar").getValue(String::class.java)
                     val height = userSnapshot.child("height").getValue(Int::class.java)
                     val weight = userSnapshot.child("weight").getValue(Int::class.java)
@@ -455,7 +550,10 @@ class FirebaseApi @Inject constructor(
                 // Thêm distinctBy trước khi emit để loại bỏ trùng lặp
                 val uniqueUsers = userList.distinctBy { it.id }
                 if (uniqueUsers.size != userList.size) {
-                    Log.w("FirebaseApi", "Detected duplicates in Firebase data: ${userList.size} -> ${uniqueUsers.size}")
+                    Log.w(
+                        "FirebaseApi",
+                        "Detected duplicates in Firebase data: ${userList.size} -> ${uniqueUsers.size}"
+                    )
                 }
                 trySend(uniqueUsers)
             }
@@ -523,7 +621,7 @@ class FirebaseApi @Inject constructor(
     suspend fun updateUser(user: User): Result<Unit> {
         return try {
             val usersRef = database.getReference("users")
-            
+
             // Kiểm tra user tồn tại
             val snapshot = usersRef.child(user.id).get().await()
             if (!snapshot.exists()) {
@@ -545,7 +643,7 @@ class FirebaseApi @Inject constructor(
                 "about" to user.about,
                 "gender" to user.gender?.name
             )
-            
+
             usersRef.child(user.id).updateChildren(updates).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -557,7 +655,7 @@ class FirebaseApi @Inject constructor(
     suspend fun deleteUser(userId: String): Result<Unit> {
         return try {
             val usersRef = database.getReference("users")
-            
+
             // Kiểm tra user tồn tại
             val snapshot = usersRef.child(userId).get().await()
             if (!snapshot.exists()) {
@@ -576,7 +674,7 @@ class FirebaseApi @Inject constructor(
     suspend fun addUser(user: User): Result<Unit> {
         return try {
             val usersRef = database.getReference("users")
-            
+
             // Kiểm tra xem ID đã được cung cấp hay chưa
             val userId = if (user.id.isNotEmpty()) {
                 user.id
@@ -584,7 +682,7 @@ class FirebaseApi @Inject constructor(
                 // Tạo một key mới nếu id chưa được cung cấp
                 usersRef.push().key ?: throw Exception("Failed to generate user ID")
             }
-            
+
             // Map thông tin người dùng
             val userData = mapOf(
                 userId to mapOf(
@@ -602,7 +700,7 @@ class FirebaseApi @Inject constructor(
                     "gender" to user.gender?.name
                 )
             )
-            
+
             // Update vào database
             usersRef.updateChildren(userData).await()
             Result.success(Unit)

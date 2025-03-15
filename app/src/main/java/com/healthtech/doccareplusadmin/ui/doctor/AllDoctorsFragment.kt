@@ -64,7 +64,7 @@ class AllDoctorsFragment : BaseFragment() {
         setupSearchView()
         setupFab()
         setupBackPressHandling()
-        
+
         // Đặt onResume để force refresh
         onResumeInitialized = false
 
@@ -156,39 +156,46 @@ class AllDoctorsFragment : BaseFragment() {
     }
 
     private fun setupAdapter() {
-        allDoctorsAdapter = AllDoctorsAdapter()
-        
-        // Click vào card bác sĩ để edit
-        allDoctorsAdapter.setOnDoctorClickListener { doctor ->
-            Timber.d("Doctor clicked: ${doctor.id} - ${doctor.name}")
-            navigateToEditDoctor(doctor.id)
-        }
-        
-        // Long click để hiển thị dialog xóa
-        allDoctorsAdapter.setOnDoctorLongClickListener { doctor ->
-            Timber.d("Doctor long clicked: ${doctor.id} - ${doctor.name}")
-            showDeleteConfirmationDialog(doctor)
-        }
-        
-        // Click vào nút edit (nếu có trong layout)
-        allDoctorsAdapter.setOnEditClickListener { doctor ->
-            Timber.d("Edit button clicked: ${doctor.id} - ${doctor.name}")
-            navigateToEditDoctor(doctor.id)
-        }
-        
-        // Click vào nút delete (nếu có trong layout)
-        allDoctorsAdapter.setOnDeleteClickListener { doctor ->
-            Timber.d("Delete button clicked: ${doctor.id} - ${doctor.name}")
-            showDeleteConfirmationDialog(doctor)
+        allDoctorsAdapter = AllDoctorsAdapter().apply {
+            // Click vào card bác sĩ để edit
+            setOnDoctorClickListener { doctor ->
+                Timber.d("Doctor clicked: ${doctor.id} - ${doctor.name}")
+                navigateToEditDoctor(doctor.id)
+            }
+
+            // Long click để hiển thị dialog xóa
+            setOnDoctorLongClickListener { doctor ->
+                Timber.d("Doctor long clicked: ${doctor.id} - ${doctor.name}")
+                showDeleteConfirmationDialog(doctor)
+            }
+
+            // Click vào nút edit (nếu có trong layout)
+            setOnEditClickListener { doctor ->
+                Timber.d("Edit button clicked: ${doctor.id} - ${doctor.name}")
+                navigateToEditDoctor(doctor.id)
+            }
+
+            // Click vào nút delete (nếu có trong layout)
+            setOnDeleteClickListener { doctor ->
+                showWarningDialog(
+                    title = "Delete Doctor",
+                    message = "Are you sure you want to delete ${doctor.name}?",
+                    positiveText = "Delete",
+                    negativeText = "Cancel",
+                    onPositive = {
+                        viewModel.deleteDoctor(doctor.id)
+                    }
+                )
+            }
         }
     }
 
-    private fun navigateToEditDoctor(doctorId: Int) {
+    private fun navigateToEditDoctor(doctorId: String) {
         val action = AllDoctorsFragmentDirections
             .actionAllDoctorsToEditDoctor(doctorId)
         findNavController().navigate(action)
     }
-    
+
     private fun showDeleteConfirmationDialog(doctor: Doctor) {
         showWarningDialog(
             title = "Delete Doctor",
@@ -222,10 +229,10 @@ class AllDoctorsFragment : BaseFragment() {
                     }
                     is UiState.Success -> {
                         binding.progressBarAllDoctors.visibility = View.GONE
-                        
+
                         // Log kết quả để debug
                         Timber.d("Loaded ${state.data.size} doctors")
-                        
+
                         if (state.data.isEmpty()) {
                             binding.tvEmptyState.visibility = View.VISIBLE
                             binding.rcvAllDoctors.visibility = View.GONE
@@ -241,13 +248,13 @@ class AllDoctorsFragment : BaseFragment() {
                     is UiState.Error -> {
                         binding.progressBarAllDoctors.visibility = View.GONE
                         Timber.e("Error loading doctors: ${state.message}")
-                        
+
                         // Hiển thị thông báo lỗi
                         SnackbarUtils.showErrorSnackbar(
                             binding.root,
                             state.message
                         )
-                        
+
                         // Hiện thông báo không có doctor nếu RecyclerView trống
                         if (allDoctorsAdapter.itemCount == 0) {
                             binding.tvEmptyState.visibility = View.VISIBLE
@@ -266,7 +273,7 @@ class AllDoctorsFragment : BaseFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.searchResults.collect { doctors ->
                 allDoctorsAdapter.setDoctors(doctors)
-                
+
                 // Hiển thị trạng thái trống nếu cần
                 if (doctors.isEmpty() && viewModel.isSearchActive.value) {
                     binding.tvEmptyState.visibility = View.VISIBLE
@@ -289,28 +296,28 @@ class AllDoctorsFragment : BaseFragment() {
                     }
                     is UiState.Success -> {
                         binding.progressBarAllDoctors.visibility = View.GONE
-                        
+
                         // Hiển thị thông báo xóa thành công
                         SnackbarUtils.showSuccessSnackbar(
                             binding.root,
                             "Doctor deleted successfully"
                         )
-                        
+
                         // Quan trọng: Reset trạng thái delete để tránh hiển thị lại
                         viewModel.resetDeleteState()
-                        
+
                         // Force refresh để cập nhật danh sách
                         viewModel.forceRefresh()
                     }
                     is UiState.Error -> {
                         binding.progressBarAllDoctors.visibility = View.GONE
-                        
+
                         // Hiển thị thông báo lỗi
                         SnackbarUtils.showErrorSnackbar(
                             binding.root,
                             state.message ?: "Failed to delete doctor"
                         )
-                        
+
                         // Quan trọng: Reset trạng thái delete
                         viewModel.resetDeleteState()
                     }
@@ -348,10 +355,10 @@ class AllDoctorsFragment : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
-        
+
         // Reset deleteState khi quay lại fragment để tránh hiển thị lại thông báo cũ
         viewModel.resetDeleteState()
-        
+
         // Khôi phục trạng thái SearchView
         viewModel.isSearchActive.value.let { isActive ->
             if (isActive) {
@@ -364,7 +371,7 @@ class AllDoctorsFragment : BaseFragment() {
                 binding.toolbar.title = viewModel.categoryName.value ?: "Manage Doctors"
             }
         }
-        
+
         // Force refresh data khi quay lại từ EditDoctorFragment
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBarAllDoctors.visibility = View.VISIBLE

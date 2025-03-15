@@ -7,11 +7,9 @@ import com.healthtech.doccareplusadmin.common.state.UiState
 import com.healthtech.doccareplusadmin.domain.model.Doctor
 import com.healthtech.doccareplusadmin.domain.repository.DoctorRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -208,7 +206,7 @@ class AllDoctorsViewModel @Inject constructor(
     }
 
     // Xóa doctor
-    fun deleteDoctor(doctorId: Int) {
+    fun deleteDoctor(doctorId: String) {
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
             try {

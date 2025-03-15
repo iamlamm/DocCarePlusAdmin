@@ -127,8 +127,8 @@
         tools:layout="@layout/fragment_edit_doctor">
         <argument
             android:name="doctorId"
-            android:defaultValue="-1"
-            app:argType="integer" />
+            app:argType="string"
+            android:defaultValue="" />
     </fragment>
     <fragment
         android:id="@+id/allUsersFragment"

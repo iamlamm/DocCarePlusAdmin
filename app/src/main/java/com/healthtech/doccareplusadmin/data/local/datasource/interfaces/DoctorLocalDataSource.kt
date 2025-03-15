@@ -12,9 +12,9 @@ interface DoctorLocalDataSource {
 
     suspend fun updateDoctor(doctor: DoctorEntity)
 
-    suspend fun deleteDoctor(doctorId: Int)
+    suspend fun deleteDoctor(doctorId: String)
 
     suspend fun deleteAllDoctors()
 
-    suspend fun getDoctorById(doctorId: Int): DoctorEntity?
+    suspend fun getDoctorById(doctorId: String): DoctorEntity?
 }

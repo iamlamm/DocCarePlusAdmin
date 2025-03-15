@@ -77,7 +77,7 @@ class EditDoctorFragment : BaseFragment() {
 
     private fun setupToolbar() {
         binding.toolbar.apply {
-            title = if (args.doctorId == -1) "Add Doctor" else "Edit Doctor"
+            title = if (args.doctorId.isEmpty()) "Add Doctor" else "Edit Doctor"
             setNavigationOnClickListener {
                 findNavController().navigateUp()
             }
@@ -279,7 +279,7 @@ class EditDoctorFragment : BaseFragment() {
             switchDoctorAvailable.isChecked = doctor.available
 
             Glide.with(requireContext())
-                .load(doctor.image)
+                .load(doctor.avatar)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .error(R.drawable.doctor_avatar_1)
                 .into(ivDoctorImage)

@@ -136,15 +136,17 @@ class AllUsersFragment : BaseFragment() {
             viewModel.usersState.collect { state ->
                 when (state) {
                     is UiState.Loading -> {
-                        binding.progressBarAllUsers.visibility = View.VISIBLE
+                        binding.progressBarAllUsers.setLoading(true)
                     }
+
                     is UiState.Success -> {
-                        binding.progressBarAllUsers.visibility = View.GONE
-                        binding.tvEmptyState.visibility = if (state.data.isEmpty()) View.VISIBLE else View.GONE
-                        
+                        binding.progressBarAllUsers.setLoading(false)
+                        binding.tvEmptyState.visibility =
+                            if (state.data.isEmpty()) View.VISIBLE else View.GONE
+
                         // Thêm log để debug
                         Timber.d("AllUsersFragment: Received ${state.data.size} users from ViewModel")
-                        
+
                         // Kiểm tra trùng lặp
                         val userIds = state.data.map { it.id }
                         val duplicateIds = userIds.groupBy { it }.filter { it.value.size > 1 }.keys
@@ -152,12 +154,14 @@ class AllUsersFragment : BaseFragment() {
                             Timber.w("Phát hiện ID trùng lặp trong ViewModel data: $duplicateIds")
                         }
                     }
+
                     is UiState.Error -> {
-                        binding.progressBarAllUsers.visibility = View.GONE
+                        binding.progressBarAllUsers.setLoading(false)
                         binding.tvEmptyState.visibility = View.VISIBLE
                         binding.tvEmptyState.text = state.message
                         Timber.e("Error loading users: ${state.message}")
                     }
+
                     else -> {
                         // Do nothing for idle state
                     }
@@ -170,10 +174,10 @@ class AllUsersFragment : BaseFragment() {
             viewModel.filteredUsers.collect { users ->
                 binding.tvEmptyState.visibility = if (users.isEmpty()) View.VISIBLE else View.GONE
                 binding.rcvAllUsers.visibility = if (users.isEmpty()) View.GONE else View.VISIBLE
-                
+
                 // Thêm log để debug
                 Timber.d("AllUsersFragment: Setting ${users.size} users to adapter")
-                
+
                 // Đơn giản hóa việc set users
                 userAdapter.submitList(users)
             }
@@ -186,12 +190,14 @@ class AllUsersFragment : BaseFragment() {
                     is UiState.Loading -> {
                         // Show loading indicator if needed
                     }
+
                     is UiState.Success -> {
                         SnackbarUtils.showSuccessSnackbar(
                             binding.root,
                             "User deleted successfully"
                         )
                     }
+
                     is UiState.Error -> {
                         Timber.e("Error deleting user: ${state.message}")
                         // Nếu lỗi là "User not found", hiển thị thông báo khác
@@ -209,6 +215,7 @@ class AllUsersFragment : BaseFragment() {
                             )
                         }
                     }
+
                     else -> {
                         // Do nothing for idle state
                     }
@@ -279,9 +286,9 @@ class AllUsersFragment : BaseFragment() {
 
         // Force refresh data khi quay lại từ EditUserFragment
         viewLifecycleOwner.lifecycleScope.launch {
-            binding.progressBarAllUsers.visibility = View.VISIBLE
-            delay(250) // Đợi animation màn hình hoàn tất
-            viewModel.forceRefresh() // Luôn refresh để cập nhật dữ liệu mới nhất
+            binding.progressBarAllUsers.setLoading(true)
+            delay(250)
+            viewModel.forceRefresh()
         }
     }
 

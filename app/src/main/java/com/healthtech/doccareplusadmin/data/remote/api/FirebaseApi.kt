@@ -514,39 +514,52 @@ class FirebaseApi @Inject constructor(
             override fun onDataChange(snapshot: DataSnapshot) {
                 val userList = mutableListOf<User>()
                 for (userSnapshot in snapshot.children) {
-                    val id = userSnapshot.key ?: continue
-                    val name = userSnapshot.child("name").getValue(String::class.java) ?: continue
-                    val email = userSnapshot.child("email").getValue(String::class.java) ?: continue
-                    val phoneNumber =
-                        userSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
-                    val role = userSnapshot.child("role").getValue(String::class.java)
-                        ?: UserRole.PATIENT.name
-                    val createdAt = userSnapshot.child("createdAt").getValue(Long::class.java)
-                        ?: System.currentTimeMillis()
-                    val avatar = userSnapshot.child("avatar").getValue(String::class.java)
-                    val height = userSnapshot.child("height").getValue(Int::class.java)
-                    val weight = userSnapshot.child("weight").getValue(Int::class.java)
-                    val age = userSnapshot.child("age").getValue(Int::class.java)
-                    val bloodType = userSnapshot.child("bloodType").getValue(String::class.java)
-                    val about = userSnapshot.child("about").getValue(String::class.java)
-                    val gender = userSnapshot.child("gender").getValue(String::class.java)
+                    try {
+                        val id = userSnapshot.key ?: continue
+                        val name = userSnapshot.child("name").getValue(String::class.java) ?: continue
+                        val email = userSnapshot.child("email").getValue(String::class.java) ?: continue
+                        val phoneNumber =
+                            userSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
+                        val role = userSnapshot.child("role").getValue(String::class.java)
+                            ?: UserRole.PATIENT.name
+                        val createdAt = userSnapshot.child("createdAt").getValue(Long::class.java)
+                            ?: System.currentTimeMillis()
+                        
+                        // Xử lý cẩn thận trường avatar
+                        val avatar = userSnapshot.child("avatar").getValue(String::class.java)?.let {
+                            if (it.isBlank()) null else it
+                        }
+                        
+                        // Log để debug
+                        Log.d("FirebaseApi", "User $id avatar: $avatar")
+                        
+                        val height = userSnapshot.child("height").getValue(Int::class.java)
+                        val weight = userSnapshot.child("weight").getValue(Int::class.java)
+                        val age = userSnapshot.child("age").getValue(Int::class.java)
+                        val bloodType = userSnapshot.child("bloodType").getValue(String::class.java)
+                        val about = userSnapshot.child("about").getValue(String::class.java)
+                        val gender = userSnapshot.child("gender").getValue(String::class.java)
 
-                    userList.add(User(
-                        id = id,
-                        name = name,
-                        email = email,
-                        phoneNumber = phoneNumber,
-                        role = UserRole.valueOf(role),
-                        createdAt = createdAt,
-                        avatar = avatar,
-                        height = height,
-                        weight = weight,
-                        age = age,
-                        bloodType = bloodType,
-                        about = about,
-                        gender = gender?.let { Gender.valueOf(it) }
-                    ))
+                        userList.add(User(
+                            id = id,
+                            name = name,
+                            email = email,
+                            phoneNumber = phoneNumber,
+                            role = UserRole.valueOf(role),
+                            createdAt = createdAt,
+                            avatar = avatar,
+                            height = height,
+                            weight = weight,
+                            age = age,
+                            bloodType = bloodType,
+                            about = about,
+                            gender = gender?.let { Gender.valueOf(it) }
+                        ))
+                    } catch (e: Exception) {
+                        Log.e("FirebaseApi", "Error parsing user data: ${e.message}", e)
+                    }
                 }
+                
                 // Thêm distinctBy trước khi emit để loại bỏ trùng lặp
                 val uniqueUsers = userList.distinctBy { it.id }
                 if (uniqueUsers.size != userList.size) {

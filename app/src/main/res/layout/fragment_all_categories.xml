@@ -61,7 +61,7 @@
                 android:textSize="18sp"
                 android:visibility="gone" />
 
-            <ProgressBar
+            <com.healthtech.doccareplusadmin.ui.widgets.loading.LoadingView
                 android:id="@+id/progress_bar_all_categories"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

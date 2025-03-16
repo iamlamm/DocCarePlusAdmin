@@ -168,13 +168,13 @@ class AllCategoriesFragment : BaseFragment() {
         viewModel.categories.collectWithLifecycle { state ->
             when (state) {
                 is UiState.Loading -> {
-                    binding.progressBarAllCategories.visibility = View.VISIBLE
+                    binding.progressBarAllCategories.setLoading(true)
                     binding.rcvAllCategories.visibility = View.GONE
                     binding.tvEmptyState.visibility = View.GONE
                 }
 
                 is UiState.Success -> {
-                    binding.progressBarAllCategories.visibility = View.GONE
+                    binding.progressBarAllCategories.setLoading(false)
                     
                     val categories = state.data
                     if (categories.isEmpty()) {
@@ -200,7 +200,7 @@ class AllCategoriesFragment : BaseFragment() {
                 }
 
                 is UiState.Error -> {
-                    binding.progressBarAllCategories.visibility = View.GONE
+                    binding.progressBarAllCategories.setLoading(false)
                     binding.rcvAllCategories.visibility = View.GONE
                     binding.tvEmptyState.visibility = View.VISIBLE
                     binding.tvEmptyState.text = state.message
@@ -236,14 +236,14 @@ class AllCategoriesFragment : BaseFragment() {
         viewModel.deleteState.collectWithLifecycle { state ->
             when (state) {
                 is UiState.Loading -> {
-                    binding.progressBarAllCategories.visibility = View.VISIBLE
+                    binding.progressBarAllCategories.setLoading(true)
                 }
                 is UiState.Success -> {
-                    binding.progressBarAllCategories.visibility = View.GONE
+                    binding.progressBarAllCategories.setLoading(false)
                     SnackbarUtils.showSuccessSnackbar(binding.root, "Category deleted successfully")
                 }
                 is UiState.Error -> {
-                    binding.progressBarAllCategories.visibility = View.GONE
+                    binding.progressBarAllCategories.setLoading(false)
                     SnackbarUtils.showErrorSnackbar(binding.root, state.message)
                 }
                 else -> {

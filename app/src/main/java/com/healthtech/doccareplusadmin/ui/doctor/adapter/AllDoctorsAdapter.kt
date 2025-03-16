@@ -20,6 +20,7 @@ class AllDoctorsAdapter : RecyclerView.Adapter<AllDoctorsAdapter.AllDoctorsViewH
     private var onDoctorLongClickListener: ((Doctor) -> Unit)? = null
     private var onEditClickListener: ((Doctor) -> Unit)? = null
     private var onDeleteClickListener: ((Doctor) -> Unit)? = null
+    private var onChatClickListener: ((Doctor) -> Unit)? = null
 
     fun setDoctors(newDoctors: List<Doctor>) {
         val diffCallback = DoctorDiffCallback(doctors, newDoctors)
@@ -47,6 +48,11 @@ class AllDoctorsAdapter : RecyclerView.Adapter<AllDoctorsAdapter.AllDoctorsViewH
     // Click listener cho nút delete
     fun setOnDeleteClickListener(listener: (Doctor) -> Unit) {
         onDeleteClickListener = listener
+    }
+
+    // Thêm setter cho chat listener
+    fun setOnChatClickListener(listener: (Doctor) -> Unit) {
+        onChatClickListener = listener
     }
 
     inner class AllDoctorsViewHolder(private val binding: ItemDoctorBinding) :
@@ -98,6 +104,12 @@ class AllDoctorsAdapter : RecyclerView.Adapter<AllDoctorsAdapter.AllDoctorsViewH
                         Timber.d("Delete button clicked for doctor: ${doctor.id}")
                         onDeleteClickListener?.invoke(doctor)
                     }
+                }
+
+                // Xử lý click vào nút chat
+                btnMessageDoctor.setOnClickListener {
+                    Timber.d("Chat button clicked for doctor: ${doctor.id}")
+                    onChatClickListener?.invoke(doctor)
                 }
             }
         }

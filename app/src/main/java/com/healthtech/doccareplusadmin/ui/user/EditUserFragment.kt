@@ -277,10 +277,14 @@ class EditUserFragment : BaseFragment() {
 
             // Role is already set as default to PATIENT if not specified
 
-            // Load avatar
+            // Log để debug
+            Timber.d("Loading avatar URL: ${user.avatar}")
+            
+            // Cải thiện cách load avatar
             Glide.with(requireContext())
-                .load(user.avatar)
+                .load(user.avatar?.takeIf { it.isNotBlank() } ?: R.mipmap.avatar_male_default)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .placeholder(R.mipmap.avatar_male_default)
                 .error(R.mipmap.avatar_male_default)
                 .into(ivUserImage)
         }

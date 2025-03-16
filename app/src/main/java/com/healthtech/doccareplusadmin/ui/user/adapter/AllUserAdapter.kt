@@ -1,5 +1,6 @@
 package com.healthtech.doccareplusadmin.ui.user.adapter
 
+import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,8 +8,12 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.Target
 import com.healthtech.doccareplusadmin.R
 import com.healthtech.doccareplusadmin.databinding.ItemUserBinding
 import com.healthtech.doccareplusadmin.domain.model.User
@@ -63,18 +68,53 @@ class AllUserAdapter : ListAdapter<User, AllUserAdapter.UserViewHolder>(UserDiff
                 tvUserName.text = user.name
                 tvUserEmail.text = user.email
                 tvUserPhone.text = user.phoneNumber
-//                tvUserRole.text = user.role.name
+                chipUserRole.text = user.role.name
 
-                // Load avatar with Glide
-                Glide.with(root.context)
-                    .load(user.avatar)
-                    .apply(
-                        RequestOptions()
-                            .placeholder(R.mipmap.avatar_male_default)
-                            .error(R.mipmap.avatar_male_default)
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    )
-                    .into(ivUserAvatar)
+                // Clear any existing image first
+                ivUserAvatar.setImageDrawable(null)
+
+                // Log để debug
+                Timber.d("Loading avatar for user ${user.id}: ${user.avatar}")
+
+                // Sửa lại cách load avatar
+                user.avatar?.let { avatarUrl ->
+                    if (avatarUrl.isNotBlank()) {
+                        Glide.with(itemView.context)
+                            .load(avatarUrl)
+                            .apply(
+                                RequestOptions()
+                                    .placeholder(R.mipmap.avatar_male_default)
+                                    .error(R.mipmap.avatar_male_default)
+                                    .skipMemoryCache(true) // Skip memory cache
+                                    .diskCacheStrategy(DiskCacheStrategy.NONE) // Skip disk cache
+                            )
+                            .listener(object : RequestListener<Drawable> {
+                                override fun onLoadFailed(
+                                    e: GlideException?,
+                                    model: Any?,
+                                    target: Target<Drawable>,
+                                    isFirstResource: Boolean
+                                ): Boolean {
+                                    Timber.e("Failed to load avatar: $avatarUrl, Error: ${e?.message}")
+                                    return false
+                                }
+
+                                override fun onResourceReady(
+                                    resource: Drawable,
+                                    model: Any,
+                                    target: Target<Drawable>?,
+                                    dataSource: DataSource,
+                                    isFirstResource: Boolean
+                                ): Boolean {
+                                    Timber.d("Successfully loaded avatar: $avatarUrl")
+                                    return false
+                                }
+                            })
+                            .into(ivUserAvatar)
+                    } else {
+                        ivUserAvatar.setImageResource(R.mipmap.avatar_male_default)
+                    }
+                } ?: ivUserAvatar.setImageResource(R.mipmap.avatar_male_default)
 
                 // Set age, gender, blood type if available
                 tvUserAge.text = user.age?.toString() ?: "N/A"

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/iv_activity_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="Activity Icon"
+            android:src="@drawable/ic_appointment" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_activity_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/black"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:text="Appointment with Dr. Smith" />
+
+            <TextView
+                android:id="@+id/tv_activity_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/charcoal_black"
+                android:textSize="14sp"
+                tools:text="John Doe has scheduled an appointment on March 15" />
+
+            <TextView
+                android:id="@+id/tv_activity_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/gray"
+                android:textSize="12sp"
+                tools:text="15 Mar, 14:30" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

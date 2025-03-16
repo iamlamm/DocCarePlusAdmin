@@ -41,4 +41,7 @@
 
     <color name="mic_button">#3498db</color>  <!-- Sử dụng màu xanh dương giống màu info -->
     <color name="speaker_button">#f39c12</color>  <!-- Sử dụng màu cam giống màu warning -->
+
+    <color name="unread_notification_bg">#F5F5F5</color>
+    <color name="red1">#c0392b</color>
 </resources>

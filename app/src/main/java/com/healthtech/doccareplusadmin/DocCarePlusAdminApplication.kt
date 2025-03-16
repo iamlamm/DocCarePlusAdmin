@@ -3,9 +3,14 @@ package com.healthtech.doccareplusadmin
 import android.app.Application
 import android.content.Context
 import com.cloudinary.android.MediaManager
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.ktx.initialize
+import com.google.firebase.FirebaseApp
 import com.healthtech.doccareplusadmin.utils.Constants
+import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallConfig
+import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallService
+import com.zegocloud.uikit.prebuilt.call.config.ZegoNotificationConfig
+import com.zegocloud.uikit.prebuilt.call.core.invite.ZegoCallInvitationData
+import com.zegocloud.uikit.prebuilt.call.invite.ZegoUIKitPrebuiltCallInvitationConfig
+import com.zegocloud.uikit.prebuilt.call.invite.internal.ZegoUIKitPrebuiltCallConfigProvider
 import com.zegocloud.zimkit.services.ZIMKit
 import com.zegocloud.zimkit.services.ZIMKitConfig
 import dagger.hilt.android.HiltAndroidApp
@@ -18,7 +23,7 @@ class DocCarePlusAdminApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Firebase.initialize(this)
+        FirebaseApp.initializeApp(this)
 //        Firebase.database.setPersistenceEnabled
         Timber.plant(Timber.DebugTree())
         configureZegoCloud()
@@ -44,6 +49,7 @@ class DocCarePlusAdminApplication : Application() {
                         Timber.d("ZIMKit auto-reconnected on app launch")
                     }
                 }
+                initZegoCallService(userId, userName)
             }
         }
     }
@@ -65,20 +71,64 @@ class DocCarePlusAdminApplication : Application() {
         }
     }
 
-//    // Thêm phương thức này để kết nối người dùng với ZIMKit
-//    fun connectZIMKit(userId: String, userName: String, callback: () -> Unit) {
-//        // Đảm bảo ID là chuỗi
-//        val userIdString = userId.trim()
-//        val avatarUrl = "https://storage.zego.im/IMKit/avatar/avatar-0.png"
-//
-//        // Kết nối
-//        ZIMKit.connectUser(userIdString, userName, avatarUrl) { error ->
-//            if (error.code == ZIMErrorCode.SUCCESS) {
-//                Log.d("ZIMKit", "Connected successfully: $userIdString")
-//                callback()
-//            } else {
-//                Log.e("ZIMKit", "Connection failed: ${error.message}")
-//            }
-//        }
-//    }
+    fun initZegoCallService(userId: String, userName: String) {
+        try {
+            val notiConfig = ZegoNotificationConfig().apply {
+                sound = "zego_uikit_sound_call"
+                channelID = "call_invitation_channel"
+                channelName = "Cuộc gọi đến"
+            }
+
+            val callInvitationConfig = ZegoUIKitPrebuiltCallInvitationConfig()
+                .apply {
+                    notificationConfig = notiConfig
+
+                    // Cấu hình âm thanh
+                    incomingCallRingtone = "zego_uikit_sound_call"
+                    outgoingCallRingtone = "zego_uikit_sound_call_waiting"
+
+                    // Các tùy chỉnh giao diện
+                    showDeclineButton = true
+                    innerText.incomingVoiceCallPageTitle = "Cuộc gọi đến từ Bác sĩ"
+                    innerText.incomingCallPageDeclineButton = "Từ chối"
+                    innerText.incomingCallPageAcceptButton = "Trả lời"
+
+                    // Kết thúc cuộc gọi khi người khởi tạo rời đi
+                    endCallWhenInitiatorLeave = true
+
+                    // Cung cấp config cho cuộc gọi
+                    provider = object : ZegoUIKitPrebuiltCallConfigProvider {
+                        override fun requireConfig(invitationData: ZegoCallInvitationData?): ZegoUIKitPrebuiltCallConfig {
+                            val isVideoCall =
+                                invitationData?.type == com.zegocloud.uikit.plugin.invitation.ZegoInvitationType.VIDEO_CALL.value
+                            return if (isVideoCall) {
+                                ZegoUIKitPrebuiltCallConfig.oneOnOneVideoCall().apply {
+                                    // Thêm cấu hình video call tùy chỉnh
+                                    turnOnCameraWhenJoining = true
+                                    useSpeakerWhenJoining = true
+                                }
+                            } else {
+                                ZegoUIKitPrebuiltCallConfig.oneOnOneVoiceCall().apply {
+                                    // Thêm cấu hình voice call tùy chỉnh
+                                    turnOnMicrophoneWhenJoining = true
+                                    useSpeakerWhenJoining = true
+                                }
+                            }
+                        }
+                    }
+                }
+            ZegoUIKitPrebuiltCallService.init(
+                this,
+                Constants.APP_ID,
+                Constants.APP_SIGN,
+                userId,
+                userName,
+                callInvitationConfig
+            )
+
+            Timber.d("ZegoUIKitPrebuiltCallService initialized successfully")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to initialize ZegoUIKitPrebuiltCallService")
+        }
+    }
 }

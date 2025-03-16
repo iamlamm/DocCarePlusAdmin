@@ -6,6 +6,7 @@ androidSdkVersion = "1.1.5"
 cameraCore = "1.4.1"
 circleimageview = "3.1.0"
 circleindicator = "2.1.6"
+cloudinaryAndroid = "2.3.1"
 dexter = "6.2.3"
 firebaseBom = "33.8.0"
 firebaseMessaging = "24.1.0"
@@ -72,6 +73,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "viewpager2" }
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
 circleindicator = { module = "me.relex:circleindicator", version.ref = "circleindicator" }
+cloudinary-android = { module = "com.cloudinary:cloudinary-android", version.ref = "cloudinaryAndroid" }
 dexter = { module = "com.karumi:dexter", version.ref = "dexter" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }

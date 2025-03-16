@@ -69,6 +69,13 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_dashboard_to_notification"
+            app:destination="@id/notificationFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -127,8 +134,8 @@
         tools:layout="@layout/fragment_edit_doctor">
         <argument
             android:name="doctorId"
-            app:argType="string"
-            android:defaultValue="" />
+            android:defaultValue=""
+            app:argType="string" />
     </fragment>
     <fragment
         android:id="@+id/allUsersFragment"
@@ -139,7 +146,7 @@
             android:id="@+id/action_allUsers_to_editUser"
             app:destination="@id/editUserFragment"
             app:enterAnim="@anim/slide_in_right"
-            app:exitAnim="@anim/slide_out_left" 
+            app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
     </fragment>
@@ -154,4 +161,16 @@
             app:argType="string"
             app:nullable="true" />
     </fragment>
+    <fragment
+        android:id="@+id/notificationFragment"
+        android:name="com.healthtech.doccareplusadmin.ui.notification.NotificationFragment"
+        android:label="fragment_notification"
+        tools:layout="@layout/fragment_notification" />
+    <action
+        android:id="@+id/action_global_notification"
+        app:destination="@+id/notificationFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left"
+        app:popEnterAnim="@anim/slide_in_left"
+        app:popExitAnim="@anim/slide_out_right" />
 </navigation>

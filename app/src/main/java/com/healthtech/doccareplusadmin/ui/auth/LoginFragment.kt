@@ -163,22 +163,26 @@ class LoginFragment : Fragment() {
         val password = binding.etLoginPassword.text.toString()
         return when {
             !hasPasswordFocused && password.isEmpty() -> {
-                binding.tilLoginPassword.error = null
+                binding.tilLoginPassword.helperText = null
+                binding.tilLoginPassword.isHelperTextEnabled = false
                 false
             }
 
             hasPasswordFocused && password.isEmpty() -> {
-                binding.tilLoginPassword.error = getString(R.string.password_required)
+                binding.tilLoginPassword.helperText = getString(R.string.password_required)
+                binding.tilLoginPassword.isHelperTextEnabled = true
                 false
             }
 
             !ValidationUtils.isValidPassword(password) -> {
-                binding.tilLoginPassword.error = getString(R.string.invalid_password)
+                binding.tilLoginPassword.helperText = getString(R.string.invalid_password)
+                binding.tilLoginPassword.isHelperTextEnabled = true
                 false
             }
 
             else -> {
-                binding.tilLoginPassword.error = null
+                binding.tilLoginPassword.helperText = null
+                binding.tilLoginPassword.isHelperTextEnabled = false
                 true
             }
         }

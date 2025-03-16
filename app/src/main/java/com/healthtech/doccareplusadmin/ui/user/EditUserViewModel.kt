@@ -134,7 +134,10 @@ class EditUserViewModel @Inject constructor(
                 val avatarUrl = _selectedImageUri.value?.let { uri ->
                     uploadUserImage(uri)
                 } ?: currentUserData.avatar
-
+                
+                // Log để debug
+                Timber.d("Saving user with avatar URL: $avatarUrl")
+                
                 val userToSave = currentUserData.copy(
                     name = name,
                     email = email,
@@ -143,10 +146,10 @@ class EditUserViewModel @Inject constructor(
                     age = age?.toIntOrNull(),
                     gender = gender,
                     bloodType = bloodType,
-                    avatar = avatarUrl,
                     height = height,
                     weight = weight,
-                    about = about
+                    about = about,
+                    avatar = avatarUrl?.takeIf { it.isNotBlank() }
                 )
 
                 // Lưu user

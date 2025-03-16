@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.BuildConfig
 import com.google.firebase.database.FirebaseDatabase
 import com.healthtech.doccareplusadmin.data.remote.api.AuthApi
+import com.healthtech.doccareplusadmin.data.remote.api.DashboardApi
 import com.healthtech.doccareplusadmin.data.remote.api.FirebaseApi
 import com.healthtech.doccareplusadmin.utils.NetworkUtils
 import dagger.Module
@@ -27,6 +28,12 @@ object FirebaseModule {
     @Singleton
     fun provideFirebaseApi(database: FirebaseDatabase): FirebaseApi {
         return FirebaseApi(database)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDashboardApi(database: FirebaseDatabase): DashboardApi {
+        return DashboardApi(database)
     }
 
     @Provides

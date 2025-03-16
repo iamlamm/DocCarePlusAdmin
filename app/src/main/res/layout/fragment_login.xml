@@ -96,6 +96,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/til_login_email"
         app:passwordToggleEnabled="true"
+        app:helperTextTextColor="@color/error"
         app:passwordToggleTint="@color/steel_teal"
         app:startIconDrawable="@drawable/ic_password"
         app:startIconTint="@color/steel_teal">

@@ -25,6 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import android.widget.Toast
 
 @AndroidEntryPoint
 class AllDoctorsFragment : BaseFragment() {
@@ -187,6 +188,12 @@ class AllDoctorsFragment : BaseFragment() {
                     }
                 )
             }
+
+            // Thêm click listener cho chat
+            setOnChatClickListener { doctor ->
+                Timber.d("Opening chat with doctor: ${doctor.id}")
+                navigateToChat(doctor)
+            }
         }
     }
 
@@ -208,6 +215,25 @@ class AllDoctorsFragment : BaseFragment() {
         )
     }
 
+    private fun navigateToChat(doctor: Doctor) {
+        try {
+            com.zegocloud.zimkit.common.ZIMKitRouter.toMessageActivity(
+                requireContext(),
+                doctor.id,  // userId là doctor.id
+                doctor.name,  // userName là doctor.name
+                doctor.avatar,  // userAvatar là doctor.avatar
+                com.zegocloud.zimkit.common.enums.ZIMKitConversationType.ZIMKitConversationTypePeer
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Error opening chat")
+            Toast.makeText(
+                requireContext(),
+                "Không thể mở cuộc trò chuyện: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     private fun setupRecyclerView() {
         binding.rcvAllDoctors.apply {
             adapter = allDoctorsAdapter
@@ -223,12 +249,12 @@ class AllDoctorsFragment : BaseFragment() {
             viewModel.doctors.collect { state ->
                 when (state) {
                     is UiState.Loading -> {
-                        binding.progressBarAllDoctors.visibility = View.VISIBLE
+                        binding.progressBarAllDoctors.setLoading(true)
                         binding.tvEmptyState.visibility = View.GONE
                         // Không ẩn RecyclerView ngay để tránh màn hình trắng
                     }
                     is UiState.Success -> {
-                        binding.progressBarAllDoctors.visibility = View.GONE
+                        binding.progressBarAllDoctors.setLoading(false)
 
                         // Log kết quả để debug
                         Timber.d("Loaded ${state.data.size} doctors")
@@ -246,7 +272,7 @@ class AllDoctorsFragment : BaseFragment() {
                         }
                     }
                     is UiState.Error -> {
-                        binding.progressBarAllDoctors.visibility = View.GONE
+                        binding.progressBarAllDoctors.setLoading(false)
                         Timber.e("Error loading doctors: ${state.message}")
 
                         // Hiển thị thông báo lỗi
@@ -292,10 +318,10 @@ class AllDoctorsFragment : BaseFragment() {
                 when (state) {
                     is UiState.Loading -> {
                         // Hiển thị loading nếu cần
-                        binding.progressBarAllDoctors.visibility = View.VISIBLE
+                        binding.progressBarAllDoctors.setLoading(true)
                     }
                     is UiState.Success -> {
-                        binding.progressBarAllDoctors.visibility = View.GONE
+                        binding.progressBarAllDoctors.setLoading(false)
 
                         // Hiển thị thông báo xóa thành công
                         SnackbarUtils.showSuccessSnackbar(
@@ -310,7 +336,7 @@ class AllDoctorsFragment : BaseFragment() {
                         viewModel.forceRefresh()
                     }
                     is UiState.Error -> {
-                        binding.progressBarAllDoctors.visibility = View.GONE
+                        binding.progressBarAllDoctors.setLoading(false)
 
                         // Hiển thị thông báo lỗi
                         SnackbarUtils.showErrorSnackbar(
@@ -374,7 +400,7 @@ class AllDoctorsFragment : BaseFragment() {
 
         // Force refresh data khi quay lại từ EditDoctorFragment
         viewLifecycleOwner.lifecycleScope.launch {
-            binding.progressBarAllDoctors.visibility = View.VISIBLE
+                binding.progressBarAllDoctors.setLoading(true)
             delay(250) // Đợi animation màn hình hoàn tất
             viewModel.forceRefresh() // Luôn refresh để cập nhật dữ liệu mới nhất
         }

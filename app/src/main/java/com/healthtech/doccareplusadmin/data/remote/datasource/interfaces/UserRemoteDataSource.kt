@@ -8,5 +8,5 @@ interface UserRemoteDataSource {
     suspend fun addUser(user: User): Result<Unit>
     suspend fun updateUser(user: User): Result<Unit>
     suspend fun deleteUser(userId: String): Result<Unit>
-    suspend fun getUserById(userId: String): Result<User>
+    suspend fun getUserById(userId: String): Result<User?>
 }

@@ -110,7 +110,7 @@ class EditDoctorViewModel @Inject constructor(
             try {
                 doctorRepository.getDoctorById(doctorId).onSuccess { doctor ->
                     _currentDoctor.value = doctor
-                    _doctorState.value = UiState.Success(doctor)
+                    _doctorState.value = UiState.Success(doctor!!)
                 }.onFailure { error ->
                     _doctorState.value = UiState.Error(error.message ?: "Failed to load doctor")
                 }

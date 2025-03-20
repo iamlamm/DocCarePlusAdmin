@@ -129,8 +129,8 @@ class AllCategoriesFragment : BaseFragment() {
             positiveText = "Delete", 
             negativeText = "Cancel",
             onPositive = {
-                category.id?.let { id ->
-                    viewModel.deleteCategory(id.toString())
+                category.id.let { id ->
+                    viewModel.deleteCategory(id)
                 }
             }
         )

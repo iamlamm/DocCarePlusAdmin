@@ -130,7 +130,6 @@ class AllUsersViewModel @Inject constructor(
 
     fun checkAndRefreshIfNeeded() {
         val currentTime = System.currentTimeMillis()
-        // Chỉ refresh nếu đã trôi qua ít nhất 1 phút từ lần cuối
         if (currentTime - lastRefreshTime > 60000 || _needsRefresh.value) {
             forceRefresh()
         }

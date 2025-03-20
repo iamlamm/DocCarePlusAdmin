@@ -1,16 +1,19 @@
 package  com.healthtech.doccareplusadmin.data.remote.api
 
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.healthtech.doccareplusadmin.domain.model.Admin
 import com.healthtech.doccareplusadmin.domain.model.Category
 import com.healthtech.doccareplusadmin.domain.model.Doctor
 import com.healthtech.doccareplusadmin.domain.model.Gender
-import com.healthtech.doccareplusadmin.domain.model.TimeSlot
 import com.healthtech.doccareplusadmin.domain.model.TimePeriod
+import com.healthtech.doccareplusadmin.domain.model.TimeSlot
 import com.healthtech.doccareplusadmin.domain.model.User
 import com.healthtech.doccareplusadmin.domain.model.UserRole
 import com.healthtech.doccareplusadmin.utils.Constants
@@ -18,18 +21,14 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * callbackFlow {}: Mở một luồng để lắng nghe sự kiện.
- * trySend(value): Gửi giá trị vào Flow.
- * awaitClose {}: Đóng Flow khi không còn lắng nghe nữa.
- */
-
 @Singleton
 class FirebaseApi @Inject constructor(
-    private val database: FirebaseDatabase
+    private val database: FirebaseDatabase,
+    private val auth: FirebaseAuth
 ) {
     fun getCategories(): Flow<List<Category>> = callbackFlow {
         val categoriesRef = database.getReference("categories")
@@ -189,12 +188,10 @@ class FirebaseApi @Inject constructor(
             override fun onDataChange(snapshot: DataSnapshot) {
                 val doctorList = mutableListOf<Doctor>()
 
-                // Duyệt qua các doctor (giờ là object thay vì array)
                 for (doctorSnapshot in snapshot.children) {
                     val id = doctorSnapshot.key ?: continue
 
                     try {
-                        // Đọc các thuộc tính của doctor
                         val name = doctorSnapshot.child("name").getValue(String::class.java) ?: ""
                         val specialty =
                             doctorSnapshot.child("specialty").getValue(String::class.java) ?: ""
@@ -223,7 +220,6 @@ class FirebaseApi @Inject constructor(
                         val available =
                             doctorSnapshot.child("available").getValue(Boolean::class.java) ?: true
 
-                        // Tạo đối tượng Doctor và thêm vào danh sách
                         doctorList.add(
                             Doctor(
                                 id = id,
@@ -251,16 +247,14 @@ class FirebaseApi @Inject constructor(
                 // Loại bỏ trùng lặp và gửi dữ liệu
                 val uniqueDoctors = doctorList.distinctBy { it.id }
                 if (uniqueDoctors.size != doctorList.size) {
-                    Log.w(
-                        "FirebaseApi",
-                        "Detected duplicates in doctors data: ${doctorList.size} -> ${uniqueDoctors.size}"
-                    )
+                    Timber.tag("FirebaseApi")
+                        .w("Detected duplicates in doctors data: " + doctorList.size + " -> " + uniqueDoctors.size)
                 }
                 trySend(uniqueDoctors)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("ERROR LOADING DOCTORS", error.message)
+                Timber.tag("ERROR LOADING DOCTORS").e(error.message)
             }
         }
 
@@ -328,14 +322,20 @@ class FirebaseApi @Inject constructor(
 
     suspend fun addDoctor(doctor: Doctor): Result<Unit> {
         return try {
+            // Tạo tài khoản authentication
+            val authResult = auth.createUserWithEmailAndPassword(
+                doctor.email,
+                Constants.DEFAULT_DOCTOR_PASSWORD
+            ).await()
+
+            val doctorId = authResult.user?.uid
+                ?: throw Exception("Failed to create authentication account")
+
             val doctorsRef = database.getReference("doctors")
 
-            // Sử dụng ID từ doctor hoặc tạo ID mới nếu chưa có
-            val doctorId = doctor.id.takeIf { it.isNotEmpty() } ?: doctorsRef.push().key
-            ?: throw Exception("Failed to generate doctor ID")
-
-            // Tạo map chứa dữ liệu doctor
+            // Tạo map chứa dữ liệu doctor với thêm trường role
             val doctorData = mapOf(
+                "id" to doctorId,
                 "name" to doctor.name,
                 "specialty" to doctor.specialty,
                 "avatar" to doctor.avatar,
@@ -349,15 +349,22 @@ class FirebaseApi @Inject constructor(
                 "phoneNumber" to doctor.phoneNumber,
                 "emergencyContact" to doctor.emergencyContact,
                 "address" to doctor.address,
-                "available" to doctor.available
+                "available" to doctor.available,
+                "role" to doctor.role.name
             )
 
             // Thêm doctor vào database
             doctorsRef.child(doctorId).setValue(doctorData).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("FirebaseApi", "Error adding doctor: ${e.message}")
-            Result.failure(e)
+            val errorMessage = when (e) {
+                is FirebaseAuthWeakPasswordException -> "Mật khẩu quá yếu"
+                is FirebaseAuthInvalidCredentialsException -> "Email không hợp lệ"
+                is FirebaseAuthUserCollisionException -> "Email đã được sử dụng"
+                else -> "Lỗi khi thêm bác sĩ: ${e.message}"
+            }
+            Log.e("FirebaseApi", errorMessage)
+            Result.failure(Exception(errorMessage))
         }
     }
 
@@ -516,23 +523,26 @@ class FirebaseApi @Inject constructor(
                 for (userSnapshot in snapshot.children) {
                     try {
                         val id = userSnapshot.key ?: continue
-                        val name = userSnapshot.child("name").getValue(String::class.java) ?: continue
-                        val email = userSnapshot.child("email").getValue(String::class.java) ?: continue
+                        val name =
+                            userSnapshot.child("name").getValue(String::class.java) ?: continue
+                        val email =
+                            userSnapshot.child("email").getValue(String::class.java) ?: continue
                         val phoneNumber =
                             userSnapshot.child("phoneNumber").getValue(String::class.java) ?: ""
                         val role = userSnapshot.child("role").getValue(String::class.java)
                             ?: UserRole.PATIENT.name
                         val createdAt = userSnapshot.child("createdAt").getValue(Long::class.java)
                             ?: System.currentTimeMillis()
-                        
+
                         // Xử lý cẩn thận trường avatar
-                        val avatar = userSnapshot.child("avatar").getValue(String::class.java)?.let {
-                            if (it.isBlank()) null else it
-                        }
-                        
+                        val avatar =
+                            userSnapshot.child("avatar").getValue(String::class.java)?.let {
+                                if (it.isBlank()) null else it
+                            }
+
                         // Log để debug
                         Log.d("FirebaseApi", "User $id avatar: $avatar")
-                        
+
                         val height = userSnapshot.child("height").getValue(Int::class.java)
                         val weight = userSnapshot.child("weight").getValue(Int::class.java)
                         val age = userSnapshot.child("age").getValue(Int::class.java)
@@ -559,7 +569,7 @@ class FirebaseApi @Inject constructor(
                         Log.e("FirebaseApi", "Error parsing user data: ${e.message}", e)
                     }
                 }
-                
+
                 // Thêm distinctBy trước khi emit để loại bỏ trùng lặp
                 val uniqueUsers = userList.distinctBy { it.id }
                 if (uniqueUsers.size != userList.size) {
@@ -686,40 +696,46 @@ class FirebaseApi @Inject constructor(
 
     suspend fun addUser(user: User): Result<Unit> {
         return try {
+            // Tạo tài khoản authentication
+            val authResult = auth.createUserWithEmailAndPassword(
+                user.email,
+                Constants.DEFAULT_USER_PASSWORD
+            ).await()
+
+            val userId = authResult.user?.uid
+                ?: throw Exception("Failed to create authentication account")
+
             val usersRef = database.getReference("users")
 
-            // Kiểm tra xem ID đã được cung cấp hay chưa
-            val userId = if (user.id.isNotEmpty()) {
-                user.id
-            } else {
-                // Tạo một key mới nếu id chưa được cung cấp
-                usersRef.push().key ?: throw Exception("Failed to generate user ID")
-            }
-
-            // Map thông tin người dùng
+            // Map thông tin người dùng, sử dụng UserRole.name để chuyển enum thành string
             val userData = mapOf(
-                userId to mapOf(
-                    "name" to user.name,
-                    "email" to user.email,
-                    "phoneNumber" to user.phoneNumber,
-                    "role" to user.role.name,
-                    "createdAt" to user.createdAt,
-                    "avatar" to user.avatar,
-                    "height" to user.height,
-                    "weight" to user.weight,
-                    "age" to user.age,
-                    "bloodType" to user.bloodType,
-                    "about" to user.about,
-                    "gender" to user.gender?.name
-                )
+                "id" to userId,
+                "name" to user.name,
+                "email" to user.email,
+                "phoneNumber" to user.phoneNumber,
+                "role" to user.role.name,
+                "createdAt" to user.createdAt,
+                "avatar" to user.avatar,
+                "height" to user.height,
+                "weight" to user.weight,
+                "age" to user.age,
+                "bloodType" to user.bloodType,
+                "about" to user.about,
+                "gender" to user.gender?.name
             )
 
-            // Update vào database
-            usersRef.updateChildren(userData).await()
+            // Thêm user vào database với userId từ Authentication
+            usersRef.child(userId).setValue(userData).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("FirebaseApi", "Error adding user: ${e.message}")
-            Result.failure(e)
+            val errorMessage = when (e) {
+                is FirebaseAuthWeakPasswordException -> "Mật khẩu quá yếu"
+                is FirebaseAuthInvalidCredentialsException -> "Email không hợp lệ"
+                is FirebaseAuthUserCollisionException -> "Email đã được sử dụng"
+                else -> "Lỗi khi thêm người dùng: ${e.message}"
+            }
+            Log.e("FirebaseApi", errorMessage)
+            Result.failure(Exception(errorMessage))
         }
     }
 }

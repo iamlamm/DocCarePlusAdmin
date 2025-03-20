@@ -84,7 +84,7 @@ class EditUserViewModel @Inject constructor(
             try {
                 userRepository.getUserById(userId).onSuccess { user ->
                     _currentUser.value = user
-                    _userState.value = UiState.Success(user)
+                    _userState.value = UiState.Success(user!!)
                 }.onFailure { error ->
                     _userState.value = UiState.Error(error.message ?: "Failed to load user")
                 }

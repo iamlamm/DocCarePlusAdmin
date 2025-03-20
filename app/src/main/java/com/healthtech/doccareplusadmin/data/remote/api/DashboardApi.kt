@@ -4,12 +4,11 @@ import com.google.firebase.database.FirebaseDatabase
 import com.healthtech.doccareplusadmin.domain.model.Activity
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
-import java.util.Calendar
-import javax.inject.Inject
-import javax.inject.Singleton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class DashboardApi @Inject constructor(
@@ -40,7 +39,7 @@ class DashboardApi @Inject constructor(
     suspend fun getTodayAppointmentsCount(): Result<Int> = try {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             .format(Date())
-        
+
         val snapshot = database.getReference("adminStats/appointmentsByDate/$today")
             .get()
             .await()
@@ -56,7 +55,7 @@ class DashboardApi @Inject constructor(
     suspend fun getMonthlyRevenue(): Result<Double> = try {
         val currentMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
             .format(Date())
-        
+
         val snapshot = database.getReference("adminStats/revenueByMonth/$currentMonth")
             .get()
             .await()
@@ -107,8 +106,10 @@ class DashboardApi @Inject constructor(
                 Activity(
                     id = activitySnapshot.key ?: return@mapNotNull null,
                     title = activitySnapshot.child("title").getValue(String::class.java) ?: "",
-                    description = activitySnapshot.child("description").getValue(String::class.java) ?: "",
-                    timestamp = activitySnapshot.child("timestamp").getValue(Long::class.java) ?: 0L,
+                    description = activitySnapshot.child("description").getValue(String::class.java)
+                        ?: "",
+                    timestamp = activitySnapshot.child("timestamp").getValue(Long::class.java)
+                        ?: 0L,
                     type = activitySnapshot.child("type").getValue(String::class.java) ?: "unknown"
                 )
             } catch (e: Exception) {

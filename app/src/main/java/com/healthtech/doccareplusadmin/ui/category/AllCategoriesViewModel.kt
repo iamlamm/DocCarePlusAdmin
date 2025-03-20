@@ -145,7 +145,7 @@ class AllCategoriesViewModel @Inject constructor(
         }
     }
 
-    fun deleteCategory(categoryId: String) {
+    fun deleteCategory(categoryId: Int) {
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
             try {

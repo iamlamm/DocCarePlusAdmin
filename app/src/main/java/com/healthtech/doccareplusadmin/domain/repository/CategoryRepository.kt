@@ -8,6 +8,6 @@ interface CategoryRepository {
 
     suspend fun addCategory(category: Category): Result<Unit>
     suspend fun updateCategory(category: Category): Result<Unit>
-    suspend fun deleteCategory(categoryId: String): Result<Unit>
-    suspend fun getCategoryById(categoryId: String): Result<Category>
+    suspend fun deleteCategory(categoryId: Int): Result<Unit>
+    suspend fun getCategoryById(categoryId: String?): Result<Category?>
 }

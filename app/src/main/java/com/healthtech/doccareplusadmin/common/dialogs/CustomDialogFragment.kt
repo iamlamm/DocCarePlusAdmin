@@ -131,7 +131,6 @@ class CustomDialogFragment : DialogFragment() {
         }
     }
 
-    // Setter cho callback
     fun setPositiveButtonCallback(callback: () -> Unit) {
         positiveButtonCallback = callback
     }

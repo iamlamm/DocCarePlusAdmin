@@ -8,6 +8,7 @@ import com.healthtech.doccareplusadmin.domain.mapper.toUserEntity
 import com.healthtech.doccareplusadmin.domain.model.User
 import com.healthtech.doccareplusadmin.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
@@ -22,50 +23,108 @@ class UserRepositoryImpl @Inject constructor(
     private val localDataSource: UserLocalDataSourceImpl
 ) : UserRepository {
 
-    override fun observeUsers(): Flow<Result<List<User>>> = channelFlow {
-        launch {
-            try {
-                // Emit local data first
-                localDataSource.getUsers().catch { e ->
+//    override fun observeUsers(): Flow<Result<List<User>>> = channelFlow {
+//        // 1. Launch for local data
+//        launch {
+//            try {
+//                localDataSource.getUsers()
+//                    .catch { e ->
+//                        if (e !is CancellationException) {
+//                            send(Result.failure(Exception("Lỗi khi tải dữ liệu local: ${e.message}")))
+//                        }
+//                    }
+//                    .map { listEntities -> listEntities.map { it.toUser() } }
+//                    .collect { localUsers ->
+//                        if (localUsers.isNotEmpty()) {
+//                            send(Result.success(localUsers))
+//                        }
+//                    }
+//            } catch (e: Exception) {
+//                send(Result.failure(Exception("Lỗi khi tải dữ liệu local: ${e.message}")))
+//                Log.e("UserRepository", "Error loading local data", e)
+//            }
+//        }
+//
+//        // 2. Launch for remote data with comparison
+//        launch {
+//            try {
+//                var lastLocalUsers: List<User>? = null
+//
+//                // Keep track of local changes
+//                localDataSource.getUsers()
+//                    .map { it.map { entity -> entity.toUser() } }
+//                    .collect { localUsers ->
+//                        lastLocalUsers = localUsers
+//                    }
+//
+//                // Listen to remote changes
+//                remoteDataSource.getUsers()
+//                    .catch { e ->
+//                        if (e !is CancellationException) {
+//                            send(Result.failure(Exception("Lỗi khi tải dữ liệu remote: ${e.message}")))
+//                        }
+//                    }
+//                    .collect { remoteUsers ->
+//                        // Compare with local data
+//                        if (lastLocalUsers != remoteUsers) {
+//                            // Update local cache if different
+//                            localDataSource.insertUsers(remoteUsers.map { it.toUserEntity() })
+//                            // Emit new data
+//                            send(Result.success(remoteUsers))
+//                        }
+//                    }
+//            } catch (e: Exception) {
+//                send(Result.failure(Exception("Lỗi khi tải dữ liệu remote: ${e.message}")))
+//                Log.e("UserRepository", "Error fetching remote data", e)
+//            }
+//        }
+//    }
+
+    override fun observeUsers(): Flow<Result<List<User>>> = callbackFlow {
+        try {
+            localDataSource.getUsers()
+                .catch { e ->
                     if (e !is CancellationException) {
                         send(Result.failure(Exception("Lỗi khi tải dữ liệu local: ${e.message}")))
                     }
                 }
-                    .map { listEntities ->
-                        listEntities.map { it.toUser() }
-                    }.collect { listUsers ->
-                        if (listUsers.isNotEmpty()) {
-                            send(Result.success(listUsers))
-                        }
+                .map { listEntities -> listEntities.map { it.toUser() } }
+                .collect { localUsers ->
+                    if (localUsers.isNotEmpty()) {
+                        send(Result.success(localUsers))
                     }
-            } catch (e: Exception) {
-                send(Result.failure(Exception("Lỗi khi tải dữ liệu local: ${e.message}")))
-                Log.e("UserRepository", "Error loading local data", e)
-            }
-        }
 
-        launch {
-            try {
-                remoteDataSource.getUsers().catch { e ->
-                    if (e !is CancellationException) {
+                    // Sau khi emit local data, fetch remote data
+                    try {
+                        remoteDataSource.getUsers()
+                            .catch { e ->
+                                if (e !is CancellationException) {
+                                    send(Result.failure(Exception("Lỗi khi tải dữ liệu remote: ${e.message}")))
+                                }
+                            }
+                            .collect { remoteUsers ->
+                                // So sánh với local data
+                                if (localUsers != remoteUsers) {
+                                    // Update local cache nếu khác
+                                    localDataSource.insertUsers(remoteUsers.map { it.toUserEntity() })
+                                    // Emit new data
+                                    send(Result.success(remoteUsers))
+                                }
+                            }
+                    } catch (e: Exception) {
                         send(Result.failure(Exception("Lỗi khi tải dữ liệu remote: ${e.message}")))
+                        Log.e("UserRepository", "Error fetching remote data", e)
                     }
-                }.collect { listUsers ->
-                    localDataSource.insertUsers(listUsers.map { it.toUserEntity() })
-                    send(Result.success(listUsers))
                 }
-            } catch (e: Exception) {
-                send(Result.failure(Exception("Lỗi khi tải dữ liệu remote: ${e.message}")))
-                Log.e("UserRepository", "Error fetching remote data", e)
-            }
+        } catch (e: Exception) {
+            send(Result.failure(Exception("Lỗi khi tải dữ liệu local: ${e.message}")))
+            Log.e("UserRepository", "Error loading local data", e)
         }
     }
 
     override suspend fun addUser(user: User): Result<Unit> {
         return try {
-            // Thêm vào remote trước
             remoteDataSource.addUser(user).onSuccess {
-                // Nếu thành công thì thêm vào local
                 localDataSource.insertUser(user.toUserEntity())
             }
         } catch (e: Exception) {
@@ -97,7 +156,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserById(userId: String): Result<User> {
+    override suspend fun getUserById(userId: String): Result<User?> {
         return try {
             // Thử lấy từ local trước
             localDataSource.getUserById(userId)?.let {
@@ -105,11 +164,7 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             // Nếu không có trong local, lấy từ remote
-            remoteDataSource.getUserById(userId).onSuccess { user ->
-                // Cache lại vào local
-                localDataSource.insertUser(user.toUserEntity())
-                Result.success(user)
-            }
+            remoteDataSource.getUserById(userId)
         } catch (e: Exception) {
             Result.failure(Exception("Lỗi khi lấy thông tin người dùng: ${e.message}"))
         }

@@ -72,9 +72,16 @@ class EditCategoryViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                categoryRepository.getCategoryById(categoryId).onSuccess { category ->
+                // Chuyển đổi String sang Int
+                val id = categoryId.toIntOrNull()
+                if (id == null) {
+                    _categoryState.value = UiState.Error("Invalid category ID")
+                    return@launch
+                }
+
+                categoryRepository.getCategoryById(id.toString()).onSuccess { category ->
                     originalCategory = category
-                    _categoryState.value = UiState.Success(category)
+                    _categoryState.value = UiState.Success(category ?: return@onSuccess)
                 }.onFailure { error ->
                     _categoryState.value = UiState.Error(error.message ?: "Failed to load category")
                 }

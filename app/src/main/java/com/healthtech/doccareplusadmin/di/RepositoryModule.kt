@@ -1,11 +1,13 @@
 package  com.healthtech.doccareplusadmin.di
 
+import com.healthtech.doccareplusadmin.data.repository.ActivityRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.AuthRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.CategoryRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.DoctorRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.StorageRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.TimeSlotRepositoryImpl
 import com.healthtech.doccareplusadmin.data.repository.UserRepositoryImpl
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.AuthRepository
 import com.healthtech.doccareplusadmin.domain.repository.CategoryRepository
 import com.healthtech.doccareplusadmin.domain.repository.DoctorRepository
@@ -248,4 +250,10 @@ abstract class RepositoryModule {
     abstract fun bindStorageRepository(
         storageRepositoryImpl: StorageRepositoryImpl
     ): StorageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindActivityRepository(
+        activityRepositoryImpl: ActivityRepositoryImpl
+    ): ActivityRepository
 }

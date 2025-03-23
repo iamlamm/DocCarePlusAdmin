@@ -3,7 +3,9 @@ package com.healthtech.doccareplusadmin.ui.category
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.Category
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AllCategoriesViewModel @Inject constructor(
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     // Chỉ để theo dõi trạng thái đã tải xong chưa
@@ -57,7 +60,6 @@ class AllCategoriesViewModel @Inject constructor(
         }
     }
 
-    // Hàm fetch categories từ repository
     private fun fetchCategories() {
         _categories.value = UiState.Loading
         viewModelScope.launch(Dispatchers.IO) {
@@ -67,16 +69,17 @@ class AllCategoriesViewModel @Inject constructor(
                         result.onSuccess { categoriesList ->
                             _categories.value = UiState.Success(categoriesList)
                             originalCategories = categoriesList
-                            
+
                             if (!_isSearchActive.value) {
                                 _searchResults.value = originalCategories
                             } else {
                                 filterCategories(_searchQuery.value)
                             }
-                            
+
                             _isInitialDataLoaded.value = true
                         }.onFailure { error ->
-                            _categories.value = UiState.Error(error.message ?: "Failed to load categories")
+                            _categories.value =
+                                UiState.Error(error.message ?: "Failed to load categories")
                         }
                     }
             } catch (e: Exception) {
@@ -85,13 +88,11 @@ class AllCategoriesViewModel @Inject constructor(
         }
     }
 
-    // Hàm đặt query tìm kiếm
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
         filterCategories(query)
     }
 
-    // Hàm lọc danh sách
     private fun filterCategories(query: String) {
         if (query.isEmpty()) {
             _searchResults.value = originalCategories
@@ -117,16 +118,13 @@ class AllCategoriesViewModel @Inject constructor(
         _searchResults.value = originalCategories
     }
 
-    // Hàm này kiểm tra và refresh chỉ khi cần thiết
     fun checkAndRefreshIfNeeded() {
         val currentTime = System.currentTimeMillis()
-        // Chỉ refresh nếu đã trôi qua ít nhất 1 phút từ lần cuối
         if (currentTime - lastRefreshTime > 60000) {
             refreshCategories()
         }
     }
 
-    // Hàm này gọi khi người dùng chủ động muốn refresh
     fun refreshCategories() {
         viewModelScope.launch(Dispatchers.IO) {
             lastRefreshTime = System.currentTimeMillis()
@@ -134,7 +132,6 @@ class AllCategoriesViewModel @Inject constructor(
         }
     }
 
-    // Thêm method để restore state
     fun restoreState() {
         if (originalCategories.isNotEmpty()) {
             if (!_isSearchActive.value) {
@@ -149,7 +146,18 @@ class AllCategoriesViewModel @Inject constructor(
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
             try {
+                val category = categoryRepository.getCategoryById(categoryId.toString()).getOrNull()
                 categoryRepository.deleteCategory(categoryId).onSuccess {
+                    category?.let {
+                        val activity = Activity(
+                            id = "",
+                            title = "Xóa chuyên khoa",
+                            description = "Chuyên khoa ${it.name} đã bị xóa khỏi hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "category_deleted"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                     _deleteState.value = UiState.Success(Unit)
                     refreshCategories()
                 }.onFailure { error ->

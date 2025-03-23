@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.Category
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.CategoryRepository
 import com.healthtech.doccareplusadmin.domain.repository.StorageRepository
 import com.healthtech.doccareplusadmin.utils.Constants
@@ -20,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class EditCategoryViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     private val _categoryState = MutableStateFlow<UiState<Category>>(UiState.Idle)
@@ -31,7 +34,7 @@ class EditCategoryViewModel @Inject constructor(
 
     private val _selectedImageUri = MutableStateFlow<Uri?>(null)
     val selectedImageUri = _selectedImageUri.asStateFlow()
-    
+
     private val _uploadProgress = MutableStateFlow(0)
     val uploadProgress = _uploadProgress.asStateFlow()
 
@@ -47,12 +50,10 @@ class EditCategoryViewModel @Inject constructor(
     }
 
     fun loadCategory(categoryId: String?) {
-        // Reset các state để tránh hiển thị sai khi tạo fragment mới
         _uploadProgress.value = 0
         _saveState.value = UiState.Idle
-        
+
         if (categoryId == null) {
-            // Đây là trường hợp thêm mới
             isNewCategory = true
             _categoryState.value = UiState.Success(
                 Category(
@@ -66,13 +67,11 @@ class EditCategoryViewModel @Inject constructor(
             return
         }
 
-        // Đây là trường hợp chỉnh sửa
         isNewCategory = false
         _categoryState.value = UiState.Loading
 
         viewModelScope.launch {
             try {
-                // Chuyển đổi String sang Int
                 val id = categoryId.toIntOrNull()
                 if (id == null) {
                     _categoryState.value = UiState.Error("Invalid category ID")
@@ -110,10 +109,9 @@ class EditCategoryViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val currentCategory = (_categoryState.value as? UiState.Success)?.data 
+                val currentCategory = (_categoryState.value as? UiState.Success)?.data
                     ?: return@launch
 
-                // Xử lý upload ảnh nếu có
                 val imageUrl = _selectedImageUri.value?.let { uri ->
                     val fileName = "category_${System.currentTimeMillis()}"
                     storageRepository.uploadCategoryImage(uri, fileName).getOrNull()
@@ -133,6 +131,25 @@ class EditCategoryViewModel @Inject constructor(
                 }
 
                 result.onSuccess {
+                    if (isNewCategory) {
+                        val activity = Activity(
+                            id = "",
+                            title = "Thêm chuyên khoa mới",
+                            description = "Chuyên khoa $name đã được thêm vào hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "category_added"
+                        )
+                        activityRepository.addActivity(activity)
+                    } else {
+                        val activity = Activity(
+                            id = "",
+                            title = "Cập nhật chuyên khoa",
+                            description = "Thông tin của chuyên khoa $name đã được cập nhật",
+                            timestamp = System.currentTimeMillis(),
+                            type = "category_updated"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                     _saveState.value = UiState.Success(Unit)
                 }.onFailure { error ->
                     _saveState.value = UiState.Error(error.message ?: "Failed to save category")

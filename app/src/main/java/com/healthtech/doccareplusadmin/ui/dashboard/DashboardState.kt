@@ -1,6 +1,7 @@
 package com.healthtech.doccareplusadmin.ui.dashboard
 
 import com.healthtech.doccareplusadmin.domain.model.Activity
+import com.healthtech.doccareplusadmin.domain.model.AppointmentsStats
 
 data class DashboardState(
     val isLoading: Boolean = true,
@@ -11,5 +12,6 @@ data class DashboardState(
     val monthlyRevenue: Double = 0.0,
     val unreadNotifications: Int = 0,
     val recentActivities: List<Activity> = emptyList(),
+    val appointmentsStats: AppointmentsStats? = null,
     val error: String? = null
 )

@@ -3,7 +3,9 @@ package com.healthtech.doccareplusadmin.ui.user
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.User
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AllUsersViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     // All users state
@@ -42,10 +45,10 @@ class AllUsersViewModel @Inject constructor(
 
     // Flag for tracking if refresh is needed
     private val _needsRefresh = MutableStateFlow(false)
-    
+
     // Lưu trữ danh sách gốc để tìm kiếm
     private var originalUsers = listOf<User>()
-    
+
     // Theo dõi thời gian cập nhật cuối
     private var lastRefreshTime = 0L
 
@@ -61,11 +64,8 @@ class AllUsersViewModel @Inject constructor(
                     .collect { result ->
                         result.onSuccess { users ->
                             Timber.d("Received ${users.size} users from repository")
-                            
-                            // Ensure no duplicates by using distinctBy
                             val uniqueUsers = users.distinctBy { it.id }
-                            
-                            // Log if duplicates were found
+
                             if (uniqueUsers.size != users.size) {
                                 Timber.w("Detected duplicates in repository data: ${users.size} -> ${uniqueUsers.size} after filtering")
                                 // Log duplicate IDs
@@ -74,20 +74,18 @@ class AllUsersViewModel @Inject constructor(
                                     .keys
                                 Timber.w("Duplicate user IDs: $duplicateIds")
                             }
-                            
-                            // Store the original list and update state
+
                             originalUsers = uniqueUsers
                             _usersState.value = UiState.Success(uniqueUsers)
-                            
-                            // Update filtered users based on current search query
+
                             filterUsers(_searchQuery.value)
-                            
-                            // Update last refresh time
+
                             lastRefreshTime = System.currentTimeMillis()
                             _needsRefresh.value = false
                         }.onFailure { error ->
                             Timber.e(error, "Failed to fetch users")
-                            _usersState.value = UiState.Error(error.message ?: "Failed to fetch users")
+                            _usersState.value =
+                                UiState.Error(error.message ?: "Failed to fetch users")
                         }
                     }
             } catch (e: Exception) {
@@ -101,7 +99,7 @@ class AllUsersViewModel @Inject constructor(
         _searchQuery.value = query
         filterUsers(query)
     }
-    
+
     fun setSearchActive(active: Boolean) {
         _isSearchActive.value = active
         if (!active) {
@@ -115,12 +113,12 @@ class AllUsersViewModel @Inject constructor(
             _filteredUsers.value = originalUsers
             return
         }
-        
+
         val lowerCaseQuery = query.lowercase()
         _filteredUsers.value = originalUsers.filter { user ->
             user.name.lowercase().contains(lowerCaseQuery) ||
-            user.email.lowercase().contains(lowerCaseQuery) ||
-            user.phoneNumber.lowercase().contains(lowerCaseQuery)
+                    user.email.lowercase().contains(lowerCaseQuery) ||
+                    user.phoneNumber.lowercase().contains(lowerCaseQuery)
         }
     }
 
@@ -143,9 +141,19 @@ class AllUsersViewModel @Inject constructor(
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
             try {
+                val user = userRepository.getUserById(userId).getOrNull()
                 userRepository.deleteUser(userId).onSuccess {
                     _deleteState.value = UiState.Success(Unit)
-                    // Không cần gọi forceRefresh vì observeUsers sẽ tự cập nhật
+                    user?.let {
+                        val activity = Activity(
+                            id = "",
+                            title = "Xóa người dùng",
+                            description = "Người dùng ${it.name} đã bị xóa khỏi hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "user_deleted"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                 }.onFailure { error ->
                     _deleteState.value = UiState.Error(error.message ?: "Failed to delete user")
                 }
@@ -154,7 +162,7 @@ class AllUsersViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun resetDeleteState() {
         _deleteState.value = UiState.Idle
     }

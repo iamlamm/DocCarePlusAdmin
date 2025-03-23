@@ -4,9 +4,11 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.Gender
 import com.healthtech.doccareplusadmin.domain.model.User
 import com.healthtech.doccareplusadmin.domain.model.UserRole
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.StorageRepository
 import com.healthtech.doccareplusadmin.domain.repository.UserRepository
 import com.healthtech.doccareplusadmin.utils.Constants
@@ -22,7 +24,8 @@ import java.util.UUID
 @HiltViewModel
 class EditUserViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     // User state
@@ -44,7 +47,7 @@ class EditUserViewModel @Inject constructor(
     // Currently editing user
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
-    
+
     // Thêm biến để theo dõi nếu đây là user mới
     private var isNewUser = true
 
@@ -54,13 +57,13 @@ class EditUserViewModel @Inject constructor(
         _uploadProgress.value = 0
         _saveState.value = UiState.Idle
         _selectedImageUri.value = null
-        
+
         if (userId == null || userId.isEmpty()) {
             // Đây là trường hợp thêm mới
             isNewUser = true
             // Tạo ID mới
             val generatedId = UUID.randomUUID().toString()
-            
+
             val emptyUser = User(
                 id = generatedId,
                 name = "",
@@ -95,7 +98,6 @@ class EditUserViewModel @Inject constructor(
         }
     }
 
-    // Save user
     fun saveUser(
         name: String,
         email: String,
@@ -127,17 +129,13 @@ class EditUserViewModel @Inject constructor(
             _saveState.value = UiState.Loading
 
             try {
-                val currentUserData = _currentUser.value 
+                val currentUserData = _currentUser.value
                     ?: throw IllegalStateException("Cannot save user: current user data not available")
 
-                // Xử lý upload ảnh nếu có
                 val avatarUrl = _selectedImageUri.value?.let { uri ->
                     uploadUserImage(uri)
                 } ?: currentUserData.avatar
-                
-                // Log để debug
-                Timber.d("Saving user with avatar URL: $avatarUrl")
-                
+
                 val userToSave = currentUserData.copy(
                     name = name,
                     email = email,
@@ -152,7 +150,6 @@ class EditUserViewModel @Inject constructor(
                     avatar = avatarUrl?.takeIf { it.isNotBlank() }
                 )
 
-                // Lưu user
                 val result = if (isNewUser) {
                     userRepository.addUser(userToSave)
                 } else {
@@ -160,6 +157,25 @@ class EditUserViewModel @Inject constructor(
                 }
 
                 result.onSuccess {
+                    if (isNewUser) {
+                        val activity = Activity(
+                            id = "",
+                            title = "Thêm người dùng mới",
+                            description = "Người dùng $name đã được thêm vào hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "user_added"
+                        )
+                        activityRepository.addActivity(activity)
+                    } else {
+                        val activity = Activity(
+                            id = "",
+                            title = "Cập nhật thông tin người dùng",
+                            description = "Thông tin của người dùng $name đã được cập nhật",
+                            timestamp = System.currentTimeMillis(),
+                            type = "user_updated"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                     _saveState.value = UiState.Success(Unit)
                 }.onFailure { error ->
                     _saveState.value = UiState.Error(error.message ?: "Failed to save user")

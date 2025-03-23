@@ -4,8 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.Category
 import com.healthtech.doccareplusadmin.domain.model.Doctor
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.CategoryRepository
 import com.healthtech.doccareplusadmin.domain.repository.DoctorRepository
 import com.healthtech.doccareplusadmin.domain.repository.StorageRepository
@@ -23,7 +25,8 @@ import javax.inject.Inject
 class EditDoctorViewModel @Inject constructor(
     private val doctorRepository: DoctorRepository,
     private val storageRepository: StorageRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     private val _doctorState = MutableStateFlow<UiState<Doctor>>(UiState.Idle)
@@ -38,14 +41,12 @@ class EditDoctorViewModel @Inject constructor(
     private val _selectedImageUri = MutableStateFlow<Uri?>(null)
     val selectedImageUri: StateFlow<Uri?> = _selectedImageUri.asStateFlow()
 
-    // Thay đổi: Tạo StateFlow cho currentDoctor
     private val _currentDoctor = MutableStateFlow<Doctor?>(null)
     val currentDoctor: StateFlow<Doctor?> = _currentDoctor.asStateFlow()
 
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories = _categories.asStateFlow()
-    
-    // Thêm biến để theo dõi nếu đây là doctor mới
+
     private var isNewDoctor = true
 
     init {
@@ -69,17 +70,14 @@ class EditDoctorViewModel @Inject constructor(
     }
 
     fun loadDoctor(doctorId: String?) {
-        // Reset các state để tránh hiển thị sai khi tạo fragment mới
         _uploadProgress.value = 0
         _saveState.value = UiState.Idle
         _selectedImageUri.value = null
-        
+
         if (doctorId == null || doctorId.isEmpty()) {
-            // Đây là trường hợp thêm mới
             isNewDoctor = true
-            // Tạo ID mới sử dụng UUID
             val generatedId = java.util.UUID.randomUUID().toString()
-            
+
             val emptyDoctor = Doctor(
                 id = generatedId,
                 name = "",
@@ -138,7 +136,6 @@ class EditDoctorViewModel @Inject constructor(
         address: String,
         available: Boolean
     ) {
-        // Kiểm tra dữ liệu đầu vào
         if (name.isBlank()) {
             _saveState.value = UiState.Error("Doctor name cannot be empty")
             return
@@ -161,7 +158,7 @@ class EditDoctorViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val currentDoctor = (_doctorState.value as? UiState.Success)?.data 
+                val currentDoctor = (_doctorState.value as? UiState.Success)?.data
                     ?: return@launch
 
                 // Xử lý upload ảnh nếu có
@@ -192,6 +189,25 @@ class EditDoctorViewModel @Inject constructor(
                 }
 
                 result.onSuccess {
+                    if (isNewDoctor) {
+                        val activity = Activity(
+                            id = "",
+                            title = "Thêm bác sĩ mới",
+                            description = "Bác sĩ $name đã được thêm vào hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "doctor_added"
+                        )
+                        activityRepository.addActivity(activity)
+                    } else {
+                        val activity = Activity(
+                            id = "",
+                            title = "Cập nhật thông tin bác sĩ",
+                            description = "Thông tin của bác sĩ $name đã được cập nhật",
+                            timestamp = System.currentTimeMillis(),
+                            type = "doctor_updated"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                     _saveState.value = UiState.Success(Unit)
                 }.onFailure { error ->
                     _saveState.value = UiState.Error(error.message ?: "Failed to save doctor")

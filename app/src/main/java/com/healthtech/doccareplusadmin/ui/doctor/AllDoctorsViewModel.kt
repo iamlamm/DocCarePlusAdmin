@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.common.state.UiState
+import com.healthtech.doccareplusadmin.domain.model.Activity
 import com.healthtech.doccareplusadmin.domain.model.Doctor
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.repository.DoctorRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import timber.log.Timber
 @HiltViewModel
 class AllDoctorsViewModel @Inject constructor(
     private val doctorRepository: DoctorRepository,
+    private val activityRepository: ActivityRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -101,7 +104,8 @@ class AllDoctorsViewModel @Inject constructor(
                             filterDoctors(_searchQuery.value)
                         }
                     }.onFailure { error ->
-                        _doctors.value = UiState.Error(error.message ?: "Failed to load doctors by category")
+                        _doctors.value =
+                            UiState.Error(error.message ?: "Failed to load doctors by category")
                         Timber.e(error, "Error loading doctors by category")
                     }
                 }
@@ -118,14 +122,14 @@ class AllDoctorsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _doctors.value = UiState.Loading
-                
+
                 doctorRepository.observeDoctors().collect { result ->
                     result.onSuccess { doctorsList ->
                         _doctors.value = UiState.Success(doctorsList)
                         originalDoctors = doctorsList
                         _searchResults.value = doctorsList
                         _isInitialDataLoaded.value = true
-                        
+
                         // Log để debug
                         Timber.d("Loaded ${doctorsList.size} doctors successfully")
                     }.onFailure { error ->
@@ -141,13 +145,11 @@ class AllDoctorsViewModel @Inject constructor(
         }
     }
 
-    // Hàm đặt query tìm kiếm
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
         filterDoctors(query)
     }
 
-    // Hàm lọc danh sách doctors
     private fun filterDoctors(query: String) {
         if (query.isEmpty()) {
             _searchResults.value = originalDoctors
@@ -162,7 +164,6 @@ class AllDoctorsViewModel @Inject constructor(
         _searchResults.value = filteredList
     }
 
-    // Hàm xóa query tìm kiếm
     fun clearSearch() {
         _searchQuery.value = ""
         _searchResults.value = originalDoctors
@@ -175,18 +176,14 @@ class AllDoctorsViewModel @Inject constructor(
         }
     }
 
-    // Cập nhật phương thức forceRefresh để đảm bảo hiển thị loading state
     fun forceRefresh() {
         viewModelScope.launch {
             lastRefreshTime = System.currentTimeMillis()
-            
-            // Đặt trạng thái loading để hiển thị loading indicator
+
             _doctors.value = UiState.Loading
-            
-            // Đảm bảo các danh sách kết quả được reset
             _searchResults.value = emptyList()
             originalDoctors = emptyList()
-            
+
             val catId = _categoryId.value
             if (catId != null) {
                 loadDoctorsByCategory(catId)
@@ -196,23 +193,30 @@ class AllDoctorsViewModel @Inject constructor(
         }
     }
 
-    // Hàm này kiểm tra và refresh chỉ khi cần thiết
     fun checkAndRefreshIfNeeded() {
         val currentTime = System.currentTimeMillis()
-        // Chỉ refresh nếu đã trôi qua ít nhất 1 phút từ lần cuối
         if (currentTime - lastRefreshTime > 60000) {
             forceRefresh()
         }
     }
 
-    // Xóa doctor
     fun deleteDoctor(doctorId: String) {
         viewModelScope.launch {
             _deleteState.value = UiState.Loading
             try {
+                val doctor = doctorRepository.getDoctorById(doctorId).getOrNull()
                 doctorRepository.deleteDoctor(doctorId).onSuccess {
                     _deleteState.value = UiState.Success(Unit)
-                    // Không cần gọi forceRefresh vì observeAllDoctors sẽ tự cập nhật
+                    doctor?.let {
+                        val activity = Activity(
+                            id = "",
+                            title = "Xóa bác sĩ",
+                            description = "Bác sĩ ${it.name} đã bị xóa khỏi hệ thống",
+                            timestamp = System.currentTimeMillis(),
+                            type = "doctor_deleted"
+                        )
+                        activityRepository.addActivity(activity)
+                    }
                 }.onFailure { error ->
                     _deleteState.value = UiState.Error(error.message ?: "Failed to delete doctor")
                 }

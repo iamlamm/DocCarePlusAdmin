@@ -20,6 +20,7 @@
     <color name="gray_light">#B3B3B3</color>
     <color name="blue_gray_light">#A0ADBB</color>
 
+
     <color name="pale_teal">#E8F3F1</color>
     <color name="teal">#2B8D7C</color>
     <color name="beige">#FFF5E9</color>
@@ -44,4 +45,8 @@
 
     <color name="unread_notification_bg">#F5F5F5</color>
     <color name="red1">#c0392b</color>
+
+    <color name="colorPrimaryLight">#80246BFD</color>  
+    <color name="chart_line_color">#246BFD</color>     
+    <color name="chart_fill_color">#1A246BFD</color>   
 </resources>

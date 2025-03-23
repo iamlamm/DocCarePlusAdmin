@@ -3,6 +3,7 @@ package  com.healthtech.doccareplusadmin.di
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.BuildConfig
 import com.google.firebase.database.FirebaseDatabase
+import com.healthtech.doccareplusadmin.data.remote.api.ActivityApi
 import com.healthtech.doccareplusadmin.data.remote.api.AuthApi
 import com.healthtech.doccareplusadmin.data.remote.api.CategoryApi
 import com.healthtech.doccareplusadmin.data.remote.api.DashboardApi
@@ -65,13 +66,19 @@ object FirebaseModule {
 
     @Provides
     @Singleton
-    fun provideDoctorApi(database: FirebaseDatabase): DoctorApi {
-        return DoctorApi(database)
+    fun provideDoctorApi(database: FirebaseDatabase, auth: FirebaseAuth): DoctorApi {
+        return DoctorApi(database, auth)
     }
 
     @Provides
     @Singleton
     fun provideUserApi(database: FirebaseDatabase, auth: FirebaseAuth): UserApi {
         return UserApi(database, auth)
+    }
+
+    @Provides
+    @Singleton
+    fun provideActivityApi(database: FirebaseDatabase): ActivityApi {
+        return ActivityApi(database)
     }
 }

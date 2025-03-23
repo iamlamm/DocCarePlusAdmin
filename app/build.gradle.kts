@@ -3,8 +3,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
     id("androidx.navigation.safeargs.kotlin")
-    id("com.google.dagger.hilt.android") version "2.50"
-    id("org.jetbrains.kotlin.kapt")
+    id("com.google.dagger.hilt.android")
+//    id("org.jetbrains.kotlin.kapt")
+    kotlin("kapt")
     id("kotlin-parcelize")
 }
 
@@ -60,6 +61,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        //noinspection DataBindingWithoutKapt
         dataBinding = true
     }
     buildFeatures {
@@ -68,62 +70,48 @@ android {
 }
 
 dependencies {
-//    implementation("com.cloudinary:kotlin-url-gen:1.7.0")
+    // Chart
+    implementation(libs.mpandroidchart)
+    // Cloudinary
     implementation(libs.cloudinary.android)
-    implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
-    implementation("com.github.ZEGOCLOUD:zego_inapp_chat_uikit_android:+")
-
+    // ZegoCloud
+    implementation(libs.zego.uikit.prebuilt.call.android)
+    implementation(libs.zego.inapp.chat.uikit.android)
     implementation(libs.dexter)
-
     // Hỗ trợ media
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-
-
     // Timber
     implementation(libs.timber)
-
+    // Volley
     implementation(libs.volley)
-
-//    // WebRTC dependencies
-//    implementation(libs.google.webrtc)
-
     // lottie
     implementation(libs.lottie)
-
+    // Library for banner
     implementation(libs.androidx.viewpager2)
     implementation(libs.material.v1110)
     implementation(libs.circleindicator)
-
+    // CircleImageView
     implementation(libs.circleimageview)
-
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.database)
-//    implementation(libs.firebase.auth)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.messaging)
-//    implementation(libs.firebase.admin)
-
-
+    // Play Services
     implementation(libs.play.services.safetynet)
     implementation(libs.play.services.auth)
-
     // Architecture Components
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.activity.ktx)
-//    implementation(libs.androidx.lifecycle.viewmodel.ktx.v270)
-//    implementation(libs.androidx.lifecycle.livedata.ktx.v270)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
     // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -131,24 +119,17 @@ dependencies {
     implementation(libs.androidx.legacy.support.v4)
     //noinspection KaptUsageInsteadOfKsp
     kapt(libs.androidx.room.compiler)
-
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
-
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.kotlinx.coroutines.core)
-
-
     // https://mvnrepository.com/artifact/com.github.bumptech.glide/glide
     implementation(libs.glide)
-
     // Gson
     implementation(libs.gson)
-
-
     // RecyclerView
     implementation(libs.androidx.recyclerview)
     // Core
@@ -162,3 +143,16 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(kotlin("script-runtime"))
 }
+
+kapt {
+    correctErrorTypes = true
+    arguments {
+        arg("dagger.hilt.android.internal.disableAndroidSuperclassValidation", "true")
+    }
+}
+
+//allprojects {
+//    tasks.matching { it.name.contains("kapt") }.configureEach {
+//        enabled = false
+//    }
+//}

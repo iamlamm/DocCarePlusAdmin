@@ -6,12 +6,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.healthtech.doccareplusadmin.data.local.preferences.AdminPreferences
 import com.healthtech.doccareplusadmin.data.remote.api.DashboardApi
+import com.healthtech.doccareplusadmin.domain.model.AppointmentsStats
+import com.healthtech.doccareplusadmin.domain.repository.ActivityRepository
 import com.healthtech.doccareplusadmin.domain.service.NotificationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.catch
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,7 +26,8 @@ import javax.inject.Inject
 class DashboardViewModel @Inject constructor(
     private val dashboardApi: DashboardApi,
     private val adminPreferences: AdminPreferences,
-    private val notificationService: NotificationService
+    private val notificationService: NotificationService,
+    private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
     private val _dashboardState = MutableLiveData(DashboardState())
@@ -34,10 +39,41 @@ class DashboardViewModel @Inject constructor(
     private val _unreadNotificationsCount = MutableStateFlow(0)
     val unreadNotificationsCount: StateFlow<Int> = _unreadNotificationsCount.asStateFlow()
 
+    private val _appointmentsStats = MutableStateFlow<AppointmentsStats?>(null)
+    val appointmentsStats: StateFlow<AppointmentsStats?> = _appointmentsStats.asStateFlow()
+
     init {
         setCurrentDate()
         loadDashboardData()
         observeUnreadNotifications()
+        loadRecentActivities()
+    }
+
+    private fun loadRecentActivities(limit: Int = 10) {
+        viewModelScope.launch {
+            try {
+                _dashboardState.value = _dashboardState.value?.copy(isLoading = true)
+                
+                activityRepository.getRecentActivities(limit)
+                    .catch { e -> 
+                        Timber.e(e, "Error loading recent activities")
+                        emit(emptyList())
+                    }
+                    .collect { activities ->
+                        Timber.d("Received ${activities.size} activities")
+                        _dashboardState.value = _dashboardState.value?.copy(
+                            recentActivities = activities,
+                            isLoading = false
+                        )
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Error loading recent activities")
+                _dashboardState.value = _dashboardState.value?.copy(
+                    isLoading = false,
+                    error = "Lỗi tải hoạt động gần đây: ${e.message}"
+                )
+            }
+        }
     }
 
     private fun setCurrentDate() {
@@ -50,46 +86,40 @@ class DashboardViewModel @Inject constructor(
             try {
                 _dashboardState.value = _dashboardState.value?.copy(isLoading = true, error = null)
 
-                // Log để debug
-                Timber.d("Starting to load dashboard data")
+                // Parallel loading using coroutines
+                val doctorsDeferred = async { dashboardApi.getDoctorsCount() }
+                val usersDeferred = async { dashboardApi.getUsersCount() }
+                val appointmentsDeferred = async { dashboardApi.getTodayAppointmentsCount() }
+                val upcomingDeferred = async { dashboardApi.getUpcomingAppointmentsCount() }
+                val revenueDeferred = async { dashboardApi.getMonthlyRevenue() }
+                val notificationsDeferred = async { dashboardApi.getUnreadNotificationsCount() }
 
-                // Lấy số lượng bác sĩ
-                dashboardApi.getDoctorsCount().onSuccess { count ->
-                    Timber.d("Doctors count: $count")
-                    _dashboardState.value = _dashboardState.value?.copy(doctorsCount = count)
+                // Collect all results
+                val doctors = doctorsDeferred.await()
+                val users = usersDeferred.await()
+                val appointments = appointmentsDeferred.await()
+                val upcoming = upcomingDeferred.await()
+                val revenue = revenueDeferred.await()
+                val notifications = notificationsDeferred.await()
+
+                // Update state with all data
+                _dashboardState.value = _dashboardState.value?.copy(
+                    isLoading = false,
+                    doctorsCount = doctors.getOrDefault(0),
+                    usersCount = users.getOrDefault(0),
+                    todayAppointments = appointments.getOrDefault(0),
+                    upcomingAppointments = upcoming.getOrDefault(0),
+                    monthlyRevenue = revenue.getOrDefault(0.0),
+                    unreadNotifications = notifications.getOrDefault(0)
+                )
+
+                // Load appointments stats
+                dashboardApi.getAppointmentsStats().collect { stats ->
+                    _dashboardState.value = _dashboardState.value?.copy(
+                        appointmentsStats = stats
+                    )
                 }
 
-                // Lấy số lượng người dùng
-                dashboardApi.getUsersCount().onSuccess { count ->
-                    Timber.d("Users count: $count")
-                    _dashboardState.value = _dashboardState.value?.copy(usersCount = count)
-                }
-
-                // Lấy số lượng cuộc hẹn hôm nay
-                dashboardApi.getTodayAppointmentsCount().onSuccess { count ->
-                    Timber.d("Today's appointments: $count")
-                    _dashboardState.value = _dashboardState.value?.copy(todayAppointments = count)
-                }
-
-                // Lấy số lượng cuộc hẹn sắp tới
-                dashboardApi.getUpcomingAppointmentsCount().onSuccess { count ->
-                    Timber.d("Upcoming appointments: $count")
-                    _dashboardState.value = _dashboardState.value?.copy(upcomingAppointments = count)
-                }
-
-                // Lấy doanh thu tháng
-                dashboardApi.getMonthlyRevenue().onSuccess { revenue ->
-                    Timber.d("Monthly revenue: $revenue")
-                    _dashboardState.value = _dashboardState.value?.copy(monthlyRevenue = revenue)
-                }
-
-                // Lấy số thông báo chưa đọc
-                dashboardApi.getUnreadNotificationsCount().onSuccess { count ->
-                    Timber.d("Unread notifications: $count")
-                    _dashboardState.value = _dashboardState.value?.copy(unreadNotifications = count)
-                }
-
-                _dashboardState.value = _dashboardState.value?.copy(isLoading = false)
             } catch (e: Exception) {
                 Timber.e(e, "Error loading dashboard data")
                 _dashboardState.value = _dashboardState.value?.copy(
@@ -102,6 +132,7 @@ class DashboardViewModel @Inject constructor(
 
     fun refreshData() {
         loadDashboardData()
+        loadRecentActivities()
     }
 
     private fun observeUnreadNotifications() {

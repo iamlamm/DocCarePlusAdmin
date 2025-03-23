@@ -25,9 +25,9 @@ class UserApi @Inject constructor(
     private val auth: FirebaseAuth
 ) {
     private val TAG = "UserApi"
+    private val userRef = database.getReference("users")
 
     fun getUsers(): Flow<List<User>> = callbackFlow {
-        val userRef = database.getReference("users")
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 Timber.tag(TAG).d("snapshot: $snapshot")
@@ -52,7 +52,6 @@ class UserApi @Inject constructor(
     }
 
     suspend fun getUserById(userId: String): Result<User?> {
-        val userRef = database.getReference("users")
         return try {
             val snapshot = userRef.child(userId).get().await()
             if (!snapshot.exists()) {
@@ -67,7 +66,6 @@ class UserApi @Inject constructor(
 
     suspend fun addUser(user: User): Result<Unit> {
         try {
-            val userRef = database.getReference("users")
             val snapshot = userRef.orderByChild("email").equalTo(user.email).get().await()
             if (snapshot.exists()) {
                 return Result.failure(Exception("User already exists in database"))
@@ -116,7 +114,6 @@ class UserApi @Inject constructor(
 //        val userId =
 //            authResult.user?.uid ?: return Result.failure(Exception("User creation failed"))
 //        val finalUser = user.copy(id = userId)
-//        val userRef = database.getReference("users")
 //        return try {
 //            val snapshot = userRef.child(userId).get().await()
 //            if (snapshot.exists()) {
@@ -131,7 +128,6 @@ class UserApi @Inject constructor(
     }
 
     suspend fun updateUser(user: User): Result<Unit> {
-        val userRef = database.getReference("users")
         return try {
             val snapshot = userRef.child(user.id).get().await()
             if (!snapshot.exists()) {
@@ -145,7 +141,6 @@ class UserApi @Inject constructor(
     }
 
     suspend fun deleteUser(userId: String): Result<Unit> {
-        val userRef = database.getReference("users")
         return try {
             val snapshot = userRef.child(userId).get().await()
             if (!snapshot.exists()) {

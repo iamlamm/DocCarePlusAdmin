@@ -1,7 +1,16 @@
 package com.healthtech.doccareplusadmin.data.remote.api
 
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.healthtech.doccareplusadmin.domain.model.Activity
+import com.healthtech.doccareplusadmin.domain.model.AppointmentsStats
+import com.healthtech.doccareplusadmin.domain.model.DoctorRevenue
+import com.healthtech.doccareplusadmin.domain.model.MonthlyRevenue
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import java.text.SimpleDateFormat
@@ -14,6 +23,7 @@ import javax.inject.Singleton
 class DashboardApi @Inject constructor(
     private val database: FirebaseDatabase
 ) {
+    private val adminStatsRef = database.getReference("adminStats")
     private val TAG = "DashboardApi"
 
     suspend fun getDoctorsCount(): Result<Int> = try {
@@ -122,5 +132,63 @@ class DashboardApi @Inject constructor(
     } catch (e: Exception) {
         Timber.e(e, "Error getting recent activities")
         Result.failure(e)
+    }
+
+    fun getAppointmentsStats(): Flow<AppointmentsStats> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                try {
+                    val stats = AppointmentsStats(
+                        appointmentsByDate = snapshot.child("appointmentsByDate")
+                            .children
+                            .associate { 
+                                it.key.toString() to (it.value as Long).toInt() 
+                            },
+                        
+                        appointmentsStatus = snapshot.child("appointmentsStatus")
+                            .children
+                            .associate { 
+                                it.key.toString() to (it.value as Long).toInt() 
+                            },
+                        
+                        revenueByDoctor = snapshot.child("revenueByDoctor")
+                            .children
+                            .associate { doctorSnapshot ->
+                                doctorSnapshot.key.toString() to DoctorRevenue(
+                                    totalAppointments = (doctorSnapshot.child("totalAppointments").value as Long).toInt(),
+                                    monthlyRevenue = doctorSnapshot.children
+                                        .filter { it.key != "totalAppointments" }
+                                        .associate { 
+                                            it.key.toString() to (it.value as Double) 
+                                        }
+                                )
+                            },
+                        
+                        revenueByMonth = snapshot.child("revenueByMonth")
+                            .children
+                            .associate { monthSnapshot ->
+                                monthSnapshot.key.toString() to MonthlyRevenue(
+                                    appointmentsCount = (monthSnapshot.child("appointmentsCount").value as Long).toInt(),
+                                    totalAmount = monthSnapshot.child("totalAmount").value as Double
+                                )
+                            }
+                    )
+                    
+                    Timber.d("Appointments stats loaded: $stats")
+                    trySend(stats)
+                } catch (e: Exception) {
+                    Timber.e(e, "Error parsing appointments stats")
+                    trySend(AppointmentsStats())
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Timber.e("Error getting appointments stats: ${error.message}")
+                trySend(AppointmentsStats())
+            }
+        }
+
+        adminStatsRef.addValueEventListener(listener)
+        awaitClose { adminStatsRef.removeEventListener(listener) }
     }
 }

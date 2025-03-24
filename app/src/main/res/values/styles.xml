@@ -65,4 +65,76 @@
         <item name="android:textSize">14sp</item>
         <item name="android:paddingStart">48dp</item>
     </style>
+
+    <style name="CustomTabLayout" parent="Widget.MaterialComponents.TabLayout">
+        <item name="tabTextAppearance">@style/CustomTabTextAppearance</item>
+        <item name="tabBackground">@android:color/transparent</item>
+        <item name="tabRippleColor">#1F2196F3</item>
+        <item name="tabIndicatorHeight">3dp</item>
+        <item name="tabIndicatorFullWidth">false</item>
+    </style>
+
+    <style name="CustomTabTextAppearance" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
+    <!-- ... existing styles ... -->
+
+    <style name="ThemeMaterialCalendar" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <!-- Màu chính cho calendar -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Màu cho các nút -->
+        <item name="buttonBarPositiveButtonStyle">@style/CalendarButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/CalendarButton.Negative</item>
+
+        <!-- Màu cho ngày được chọn -->
+        <item name="materialCalendarStyle">@style/CustomMaterialCalendar</item>
+        <item name="materialCalendarFullscreenTheme">@style/CustomMaterialCalendarFullscreen</item>
+        <item name="materialCalendarTheme">@style/CustomMaterialCalendarTheme</item>
+    </style>
+
+    <!-- Style cho nút Positive (OK/Xác nhận) -->
+    <style name="CalendarButton.Positive" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/primary</item>
+        <item name="rippleColor">@color/primary_light</item>
+    </style>
+
+    <!-- Style cho nút Negative (Hủy) -->
+    <style name="CalendarButton.Negative" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gray</item>
+        <item name="rippleColor">@color/gray_light</item>
+    </style>
+
+    <!-- Style cho MaterialCalendar -->
+    <style name="CustomMaterialCalendar" parent="Widget.MaterialComponents.MaterialCalendar">
+        <item name="android:windowFullscreen">false</item>
+        <item name="shapeAppearanceOverlay">@style/CustomShapeAppearanceOverlay.MaterialCalendar</item>
+    </style>
+
+    <!-- Style cho MaterialCalendar fullscreen -->
+    <style name="CustomMaterialCalendarFullscreen" parent="ThemeOverlay.MaterialComponents.MaterialCalendar.Fullscreen">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- Theme cho MaterialCalendar -->
+    <style name="CustomMaterialCalendarTheme" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
+        <!-- Màu cho ngày được chọn -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Màu cho today -->
+        <item name="colorSecondary">@color/primary_light</item>
+        <item name="colorOnSecondary">@color/primary_dark</item>
+    </style>
+
+    <!-- Shape cho calendar -->
+    <style name="CustomShapeAppearanceOverlay.MaterialCalendar" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
 </resources>

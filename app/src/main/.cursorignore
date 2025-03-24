@@ -13,6 +13,13 @@
 /res/mipmap-xhdpi
 /res/mipmap-xxhdpi
 /res/mipmap-xxxhdpi
+/res/raw
+/res/mipmap-anydpi-v26
+/res/mipmap-mdpi-v26
+/res/mipmap-xhdpi-v26
+/res/mipmap-xxhdpi-v26
+/res/mipmap-xxxhdpi-v26
+/res/mipmap-hdpi
 /res/xml
 /res/values
 /res/values-v11
@@ -20,3 +27,4 @@
 /res/values-v13
 /res/values-v14
 /res/values-v15
+/res/values-night

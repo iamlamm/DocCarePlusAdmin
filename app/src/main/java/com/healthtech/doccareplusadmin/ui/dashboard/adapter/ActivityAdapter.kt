@@ -41,9 +41,11 @@ class ActivityAdapter :
                 tvActivityTime.text = formatTimestamp(activity.timestamp)
 
                 // Set icon based on activity type
+//                val iconRes = getIconForActivityType(activity.type)
+//                ivActivityIcon.setImageResource(iconRes)
                 val iconRes = getIconForActivityType(activity.type)
-                ivActivityIcon.setImageResource(iconRes)
-                
+                ivActivityIcon.setAnimation(iconRes)
+
                 // Force layout update
                 root.requestLayout()
             }
@@ -56,23 +58,41 @@ class ActivityAdapter :
         }
 
         private fun getIconForActivityType(type: String): Int {
+//            return when (type.lowercase()) {
+//                "appointment" -> R.drawable.ic_appointment
+//                "appointment_cancelled" -> R.drawable.ic_appointment
+//                "user_registration" -> R.drawable.ic_user
+//                "user_added" -> R.mipmap.ic_user_boy_added
+//                "user_updated" -> R.mipmap.ic_user_updated
+//                "user_blocked" -> R.drawable.ic_user
+//                "user_deleted" -> R.mipmap.ic_user_deleted
+//                "doctor_added" -> R.mipmap.ic_user_boy_added
+//                "doctor_updated" -> R.mipmap.ic_user_updated
+//                "doctor_deleted" -> R.mipmap.ic_user_deleted
+//                "category_added" -> R.drawable.ic_category
+//                "category_updated" -> R.drawable.ic_category
+//                "category_deleted" -> R.drawable.ic_category
+////                "admin_login" -> R.drawable.ic_admin
+////                "admin_logout" -> R.drawable.ic_admin
+//                else -> R.mipmap.avatar_bear_default
+//            }
             return when (type.lowercase()) {
-                "appointment" -> R.drawable.ic_appointment
-                "appointment_cancelled" -> R.drawable.ic_appointment
-                "user_registration" -> R.drawable.ic_user
-                "user_added" -> R.mipmap.ic_user_boy_added
-                "user_updated" -> R.mipmap.ic_user_updated
-                "user_blocked" -> R.drawable.ic_user
-                "user_deleted" -> R.mipmap.ic_user_deleted
-                "doctor_added" -> R.mipmap.ic_user_boy_added
-                "doctor_updated" -> R.mipmap.ic_user_updated
-                "doctor_deleted" -> R.mipmap.ic_user_deleted
-                "category_added" -> R.drawable.ic_category
-                "category_updated" -> R.drawable.ic_category
-                "category_deleted" -> R.drawable.ic_category
+                "appointment" -> R.raw.appoientment
+                "appointment_cancelled" -> R.raw.appoientment
+                "user_registration" -> R.raw.user
+                "user_added" -> R.raw.user
+                "user_updated" -> R.raw.user
+                "user_blocked" -> R.raw.user
+                "user_deleted" -> R.raw.user
+                "doctor_added" -> R.raw.doctor
+                "doctor_updated" -> R.raw.doctor
+                "doctor_deleted" -> R.raw.doctor
+                "category_added" -> R.raw.category
+                "category_updated" -> R.raw.category
+                "category_deleted" -> R.raw.category
 //                "admin_login" -> R.drawable.ic_admin
 //                "admin_logout" -> R.drawable.ic_admin
-                else -> R.mipmap.avatar_bear_default
+                else -> R.raw.loading_10
             }
         }
     }

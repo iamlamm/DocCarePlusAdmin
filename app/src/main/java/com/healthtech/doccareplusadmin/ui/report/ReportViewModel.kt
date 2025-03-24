@@ -303,18 +303,65 @@ class ReportViewModel @Inject constructor(
             if (revenue != null) {
                 addSection(document, "DOANH THU THEO THÁNG", sectionFont)
                 
-                val table = PdfPTable(2)
+                val table = PdfPTable(3)
                 table.widthPercentage = 100f
                 table.spacingBefore = 10f
                 table.spacingAfter = 20f
 
-                revenue.monthlyRevenue.forEach { (month, amount) ->
-                    addTableRow(table, "Tháng $month", 
-                        ChartUtils.formatCurrency(amount.toFloat()),
-                        vietnameseFont)
-                }
+                // Header cho bảng doanh thu
+                addTableRow(
+                    table,
+                    "Tháng",
+                    "Doanh thu",
+                    "Số cuộc hẹn",
+                    vietnameseFont
+                )
+
+                revenue.monthlyRevenue.entries
+                    .sortedBy { it.key }
+                    .forEach { (month, data) ->
+                        addTableRow(
+                            table,
+                            formatMonthLabel(month),
+                            ChartUtils.formatCurrency(data.totalAmount.toFloat()),
+                            "${data.appointmentsCount} cuộc hẹn",
+                            vietnameseFont
+                        )
+                    }
                 
                 document.add(table)
+
+                // Thêm thông tin tổng hợp với bảng 2 cột
+                val totalRevenue = revenue.monthlyRevenue.values.sumOf { it.totalAmount }
+                val totalAppointments = revenue.monthlyRevenue.values.sumOf { it.appointmentsCount }
+                val averageRevenue = if (totalAppointments > 0) totalRevenue / totalAppointments else 0.0
+
+                val summaryTable = PdfPTable(2) // Bảng tổng hợp vẫn dùng 2 cột
+                summaryTable.widthPercentage = 100f
+                summaryTable.spacingBefore = 10f
+                summaryTable.spacingAfter = 20f
+
+                // Sử dụng addTableRow với 2 tham số cho bảng tổng hợp
+                addTableRow(
+                    summaryTable,
+                    "Tổng doanh thu",
+                    ChartUtils.formatCurrency(totalRevenue.toFloat()),
+                    vietnameseFont
+                )
+                addTableRow(
+                    summaryTable,
+                    "Tổng số cuộc hẹn",
+                    "$totalAppointments",
+                    vietnameseFont
+                )
+                addTableRow(
+                    summaryTable,
+                    "Doanh thu trung bình/cuộc hẹn",
+                    ChartUtils.formatCurrency(averageRevenue.toFloat()),
+                    vietnameseFont
+                )
+
+                document.add(summaryTable)
             }
 
             // Thống kê cuộc hẹn
@@ -370,24 +417,30 @@ class ReportViewModel @Inject constructor(
         val cell1 = PdfPCell(Paragraph(label, font))
         val cell2 = PdfPCell(Paragraph(value, font))
         
-        // Set padding cho từng cạnh
-        cell1.setPadding(8f)  // hoặc có thể set riêng:
-        cell1.setPaddingLeft(8f)
-        cell1.setPaddingRight(8f)
-        cell1.setPaddingTop(8f)
-        cell1.setPaddingBottom(8f)
-        
-        cell2.setPadding(8f)  // hoặc có thể set riêng:
-        cell2.setPaddingLeft(8f)
-        cell2.setPaddingRight(8f)
-        cell2.setPaddingTop(8f)
-        cell2.setPaddingBottom(8f)
-        
-        cell1.borderColor = BaseColor.LIGHT_GRAY
-        cell2.borderColor = BaseColor.LIGHT_GRAY
+        // Set padding cho từng cell
+        listOf(cell1, cell2).forEach { cell ->
+            cell.setPadding(8f)
+            cell.borderColor = BaseColor.LIGHT_GRAY
+        }
         
         table.addCell(cell1)
         table.addCell(cell2)
+    }
+
+    private fun addTableRow(table: PdfPTable, label1: String, label2: String, label3: String, font: Font) {
+        val cell1 = PdfPCell(Paragraph(label1, font))
+        val cell2 = PdfPCell(Paragraph(label2, font))
+        val cell3 = PdfPCell(Paragraph(label3, font))
+        
+        // Set padding cho từng cell
+        listOf(cell1, cell2, cell3).forEach { cell ->
+            cell.setPadding(8f)
+            cell.borderColor = BaseColor.LIGHT_GRAY
+        }
+        
+        table.addCell(cell1)
+        table.addCell(cell2)
+        table.addCell(cell3)
     }
 
     private fun getCurrentDateTime(): String {
@@ -396,5 +449,15 @@ class ReportViewModel @Inject constructor(
 
     private fun formatDateTime(timestamp: Long): String {
         return SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(timestamp))
+    }
+
+    private fun formatMonthLabel(monthKey: String): String {
+        return try {
+            // Chuyển đổi format từ "2025-03" thành "Tháng 3/2025"
+            val parts = monthKey.split("-")
+            "Tháng ${parts[1].toInt()}/${parts[0]}"
+        } catch (e: Exception) {
+            monthKey
+        }
     }
 }

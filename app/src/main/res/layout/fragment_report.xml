@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/report_gradient_bg"
     tools:context=".ui.report.ReportFragment">
 
     <com.google.android.material.appbar.AppBarLayout
@@ -16,8 +18,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            app:cardBackgroundColor="#FFFFFF">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -25,7 +30,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-    <TextView
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Thống kê báo cáo"
@@ -38,8 +43,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    app:tabGravity="fill"
                     app:tabMode="fixed"
-                    app:tabGravity="fill">
+                    app:tabSelectedTextColor="@color/primary"
+                    app:tabIndicatorColor="@color/primary"
+                    app:tabTextColor="#757575"
+                    app:tabRippleColor="#1F2196F3"
+                    style="@style/CustomTabLayout">
 
                     <com.google.android.material.tabs.TabItem
                         android:layout_width="wrap_content"
@@ -91,7 +101,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="Xuất báo cáo" />
+                        android:text="Xuất báo cáo"
+                        app:strokeColor="@color/primary"
+                        app:rippleColor="#1F2196F3"
+                        android:textColor="@color/primary" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -114,8 +127,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#F8F9FF"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -131,11 +147,19 @@
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <com.github.mikephil.charting.charts.BarChart
-                        android:id="@+id/overviewChart"
+                    <!-- Biểu đồ tròn cho tỷ lệ bác sĩ/bệnh nhân -->
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/userDistributionChart"
                         android:layout_width="match_parent"
-                        android:layout_height="300dp"
-                        android:padding="16dp" />
+                        android:layout_height="200dp"
+                        android:layout_marginTop="16dp" />
+
+                    <!-- Biểu đồ tròn cho trạng thái cuộc hẹn -->
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/appointmentStatusChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:layout_marginTop="24dp" />
 
                     <ProgressBar
                         android:id="@+id/overviewLoadingProgress"
@@ -161,8 +185,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFF8F1"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -178,10 +205,10 @@
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
-                    <com.github.mikephil.charting.charts.BarChart
+                    <com.github.mikephil.charting.charts.LineChart
                         android:id="@+id/revenueChart"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="250dp"
                         android:layout_marginTop="16dp" />
 
                     <ProgressBar
@@ -199,6 +226,41 @@
                         android:padding="16dp"
                         android:text="Không có dữ liệu doanh thu"
                         android:visibility="gone" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/tvTotalRevenue"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/revenue_line_color"
+                            tools:text="25.6M đ" />
+
+                        <TextView
+                            android:id="@+id/tvTotalAppointments"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="14sp"
+                            android:textColor="@color/appointment_line_color"
+                            tools:text="125 cuộc hẹn" />
+
+                        <TextView
+                            android:id="@+id/tvAverageRevenue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:textSize="14sp"
+                            android:textColor="@color/gray"
+                            tools:text="TB: 205K/cuộc hẹn" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -208,8 +270,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#F1F8FF"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -254,8 +319,11 @@
                 android:id="@+id/activitiesCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#F5F1FF"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -147,22 +147,24 @@ class DashboardFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        // Setup notification button click
-        binding.btnNotification.setOnClickListener {
-            // Navigate to notifications
-        }
+        binding.apply {
+            // Setup notification button click
+            btnNotification.setOnClickListener {
+                findNavController().navigate(R.id.action_dashboard_to_notification)
+            }
 
-        // Setup quick action clicks
-        binding.actionApproveDoctors.setOnClickListener {
-            // Navigate to approve doctors screen
-        }
+            // Setup quick action clicks
+            actionManageDoctors.setOnClickListener {
+                findNavController().navigate(R.id.action_dashboard_to_allDoctors)
+            }
 
-        binding.actionAddCategory.setOnClickListener {
-            // Navigate to add category screen
-        }
+            actionManageCategories.setOnClickListener {
+                findNavController().navigate(R.id.action_dashboard_to_allCategories)
+            }
 
-        binding.actionViewReports.setOnClickListener {
-            // Navigate to reports screen
+            actionViewReports.setOnClickListener {
+                findNavController().navigate(R.id.action_dashboard_to_report)
+            }
         }
     }
 

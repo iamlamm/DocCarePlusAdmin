@@ -20,6 +20,8 @@
     <color name="gray_light">#B3B3B3</color>
     <color name="blue_gray_light">#A0ADBB</color>
 
+    <color name="ripple_color">#1F000000</color>
+    <color name="gray_600">#757575</color>
 
     <color name="pale_teal">#E8F3F1</color>
     <color name="teal">#2B8D7C</color>
@@ -29,19 +31,17 @@
     <color name="warm_brown">#5A4B35</color>
     <color name="black_transparent">#80000000</color>
 
-    <!-- Dialog Icons Colors -->
     <color name="primary">@color/teal</color>
     <color name="success">#27ae60</color>
     <color name="error">#e74c3c</color>
     <color name="warning">#f39c12</color>
     <color name="info">#3498db</color>
 
-    <!-- Call Button Colors -->
     <color name="accept_call_button">#27ae60</color>
     <color name="reject_call_button">#e74c3c</color>
 
-    <color name="mic_button">#3498db</color>  <!-- Sử dụng màu xanh dương giống màu info -->
-    <color name="speaker_button">#f39c12</color>  <!-- Sử dụng màu cam giống màu warning -->
+    <color name="mic_button">#3498db</color>
+    <color name="speaker_button">#f39c12</color>
 
     <color name="unread_notification_bg">#F5F5F5</color>
     <color name="red1">#c0392b</color>
@@ -57,11 +57,26 @@
     <color name="chart_color_4">#9C27B0</color>
     <color name="chart_color_5">#F44336</color>
 
-    <!-- Chart Colors -->
-    <color name="doctor_color">#4CAF50</color>      <!-- Material Green -->
-    <color name="patient_color">#2196F3</color>     <!-- Material Blue -->
-    <color name="appointment_color">#9C27B0</color> <!-- Material Purple -->
-    <color name="pending_color">#FFC107</color>     <!-- Material Amber -->
-    <color name="completed_color">#00BCD4</color>   <!-- Material Cyan -->
-    <color name="cancelled_color">#F44336</color>   <!-- Material Red -->
+    <color name="doctor_color">#4CAF50</color>
+    <color name="patient_color">#2196F3</color>
+    <color name="appointment_color">#9C27B0</color>
+    <color name="pending_color">#FFC107</color>
+    <color name="completed_color">#00BCD4</color>
+    <color name="cancelled_color">#F44336</color>
+
+    <color name="revenue_gradient_start">#4CAF50</color>
+    <color name="revenue_gradient_end">#81C784</color>
+    <color name="revenue_line_color">#2E7D32</color>
+    <color name="revenue_point_color">#1B5E20</color>
+    <color name="revenue_text_color">#424242</color>
+    <color name="axis_text_color">#757575</color>
+    <color name="grid_color">#E0E0E0</color>
+    <color name="legend_text_color">#616161</color>
+
+    <color name="appointment_line_color">#2196F3</color>
+    <color name="appointment_point_color">#1976D2</color>
+    <color name="appointment_text_color">#1565C0</color>
+
+    <color name="primary_dark">#1976D2</color>
+    <color name="primary_light">#BBDEFB</color>
 </resources>

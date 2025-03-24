@@ -1,10 +1,11 @@
 package com.healthtech.doccareplusadmin.ui.report
 
-import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,8 +20,10 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.charts.Chart
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
+import com.github.mikephil.charting.components.AxisBase
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -30,8 +33,11 @@ import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.PercentFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.healthtech.doccareplusadmin.R
 import com.healthtech.doccareplusadmin.databinding.FragmentReportBinding
@@ -42,24 +48,19 @@ import com.healthtech.doccareplusadmin.domain.model.RevenueStats
 import com.healthtech.doccareplusadmin.ui.dashboard.adapter.ActivityAdapter
 import com.healthtech.doccareplusadmin.ui.report.chart.ChartConfig
 import com.healthtech.doccareplusadmin.ui.report.chart.ChartUtils
+import com.healthtech.doccareplusadmin.ui.report.chart.ChartUtils.formatCurrency
 import com.healthtech.doccareplusadmin.ui.report.chart.PieChartConfig
 import com.healthtech.doccareplusadmin.ui.report.chart.applyConfig
+import com.healthtech.doccareplusadmin.utils.PermissionManager
 import com.healthtech.doccareplusadmin.utils.SnackbarUtils
 import com.healthtech.doccareplusadmin.utils.showWarningDialog
-import com.healthtech.doccareplusadmin.utils.PermissionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Locale
-import timber.log.Timber
-import androidx.annotation.RequiresApi
-import android.content.Intent
-import android.net.Uri
-import android.content.ActivityNotFoundException
-import com.google.android.material.snackbar.Snackbar
-import com.github.mikephil.charting.components.AxisBase
 
 @AndroidEntryPoint
 class ReportFragment : Fragment() {
@@ -70,8 +71,9 @@ class ReportFragment : Fragment() {
     private val viewModel: ReportViewModel by viewModels()
     private lateinit var activityAdapter: ActivityAdapter
 
-    private var overviewChart: LineChart? = null
-    private var revenueChart: BarChart? = null
+    private var userDistributionChart: PieChart? = null
+    private var appointmentStatusChart: PieChart? = null
+    private var revenueChart: LineChart? = null
     private var appointmentsChart: PieChart? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,6 +93,13 @@ class ReportFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Khởi tạo các biến chart
+        userDistributionChart = binding.userDistributionChart
+        appointmentStatusChart = binding.appointmentStatusChart
+        revenueChart = binding.revenueChart
+        appointmentsChart = binding.appointmentsChart
+        
         initializeCharts()
         setupTabLayout()
         setupDateRangePicker()
@@ -98,22 +107,18 @@ class ReportFragment : Fragment() {
         setupExportButton()
         observeData()
         handleExportReport()
-        
-        // Thêm dòng này để load dữ liệu ban đầu
         loadInitialData()
     }
 
     private fun initializeCharts() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-            val overviewConfig = ChartConfig(
-                shouldShowDescription = false,
-                shouldEnableTouch = true,
-                shouldEnableDrag = true,
-                shouldEnableScale = true,
-                shouldEnablePinchZoom = true,
-                shouldShowGrid = false,
-                shouldShowRightAxis = false,
-                xAxisPosition = XAxis.XAxisPosition.BOTTOM
+            val pieConfig = PieChartConfig(
+                holeEnabled = true,
+                centerText = true,
+                rotationEnabled = true,
+                highlightPerTapEnabled = true,
+                entryLabels = false,
+                legend = true
             )
 
             val revenueConfig = ChartConfig(
@@ -127,39 +132,100 @@ class ReportFragment : Fragment() {
                 xAxisPosition = XAxis.XAxisPosition.BOTTOM
             )
 
-            val pieConfig = PieChartConfig(
-                holeEnabled = true,
-                centerText = true,
-                rotationEnabled = true,
-                highlightPerTapEnabled = true,
-                entryLabels = false,
-                legend = true
-            )
-
             withContext(Dispatchers.Main) {
-                binding.overviewChart.apply {
-                    applyConfig(overviewConfig)
+                // Cấu hình cho userDistributionChart
+                userDistributionChart?.apply {
+                    pieConfig.applyTo(this)
                 }
-                binding.revenueChart.apply {
+
+                // Cấu hình cho appointmentStatusChart
+                appointmentStatusChart?.apply {
+                    pieConfig.applyTo(this)
+                }
+
+                // Cấu hình cho revenueChart
+                revenueChart?.apply {
                     applyConfig(revenueConfig)
                 }
-                binding.appointmentsChart.apply {
+
+                // Cấu hình cho appointmentsChart
+                appointmentsChart?.apply {
                     pieConfig.applyTo(this)
                 }
             }
         }
     }
 
-    private fun setupOverviewChart() {
-        overviewChart?.apply {
+    private fun updateOverviewData(stats: OverviewStats) {
+        // Cấu hình biểu đồ phân bố người dùng
+        val userEntries = listOf(
+            PieEntry(stats.totalDoctors.toFloat(), "Bác sĩ"),
+            PieEntry(stats.totalPatients.toFloat(), "Bệnh nhân")
+        )
+
+        userDistributionChart?.let {
+            setupPieChart(
+                it,
+                userEntries,
+                "Phân bố người dùng",
+                listOf(
+                    ContextCompat.getColor(requireContext(), R.color.doctor_color),
+                    ContextCompat.getColor(requireContext(), R.color.patient_color)
+                )
+            )
+        }
+
+        // Cấu hình biểu đồ trạng thái cuộc hẹn
+        val appointmentEntries = listOf(
+            PieEntry(stats.pendingAppointments.toFloat(), "Chờ khám"),
+            PieEntry(stats.completedAppointments.toFloat(), "Đã khám"),
+            PieEntry(stats.cancelledAppointments.toFloat(), "Đã hủy")
+        )
+
+        appointmentStatusChart?.let {
+            setupPieChart(
+                it,
+                appointmentEntries,
+                "Trạng thái cuộc hẹn",
+                listOf(
+                    ContextCompat.getColor(requireContext(), R.color.pending_color),
+                    ContextCompat.getColor(requireContext(), R.color.completed_color),
+                    ContextCompat.getColor(requireContext(), R.color.cancelled_color)
+                )
+            )
+        }
+    }
+
+    private fun setupPieChart(
+        chart: PieChart,
+        entries: List<PieEntry>,
+        label: String,
+        colors: List<Int>
+    ) {
+        val dataSet = PieDataSet(entries, label).apply {
+            this.colors = colors
+            valueTextSize = 14f
+            valueTextColor = Color.WHITE
+            valueFormatter = PercentFormatter(chart)
+        }
+
+        chart.apply {
+            data = PieData(dataSet)
             description.isEnabled = false
-            setTouchEnabled(true)
-            isDragEnabled = true
-            setScaleEnabled(true)
-            setPinchZoom(true)
-            setDrawGridBackground(false)
-            axisRight.isEnabled = false
-            xAxis.position = XAxis.XAxisPosition.BOTTOM
+            setUsePercentValues(true)
+            setEntryLabelColor(Color.BLACK)
+            setEntryLabelTextSize(12f)
+            legend.apply {
+                verticalAlignment = Legend.LegendVerticalAlignment.TOP
+                horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
+                orientation = Legend.LegendOrientation.VERTICAL
+                setDrawInside(false)
+                textSize = 12f
+            }
+            centerText = label
+            setCenterTextSize(14f)
+            animateY(1000)
+            invalidate()
         }
     }
 
@@ -219,23 +285,51 @@ class ReportFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun showDateRangePicker() {
-        val dateRangePicker = MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("Chọn khoảng thời gian")
-            .build()
+        try {
+            val dateRangePicker = MaterialDatePicker.Builder.dateRangePicker()
+                .setTitleText("Chọn khoảng thời gian")
+                .setSelection(
+                    androidx.core.util.Pair(
+                        viewModel.selectedDateRange.value?.first ?: MaterialDatePicker.todayInUtcMilliseconds(),
+                        viewModel.selectedDateRange.value?.second ?: MaterialDatePicker.todayInUtcMilliseconds()
+                    )
+                )
+                .setTheme(R.style.ThemeMaterialCalendar)
+                .build()
 
-        dateRangePicker.addOnPositiveButtonClickListener { selection ->
-            val startDate = selection.first
-            val endDate = selection.second
-            viewModel.updateDateRange(startDate, endDate)
+            dateRangePicker.addOnPositiveButtonClickListener { selection ->
+                try {
+                    val startDate = selection.first
+                    val endDate = selection.second
+                    
+                    if (startDate > endDate) {
+                        showError("Ngày bắt đầu không thể sau ngày kết thúc")
+                        return@addOnPositiveButtonClickListener
+                    }
 
-            // Update input text
+                    viewModel.updateDateRange(startDate, endDate)
+                    updateDateRangeText(startDate, endDate)
+                } catch (e: Exception) {
+                    handleError(e, "Lỗi cập nhật khoảng thời gian")
+                }
+            }
+
+            dateRangePicker.show(childFragmentManager, "date_range_picker")
+        } catch (e: Exception) {
+            handleError(e, "Lỗi hiển thị date picker")
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun updateDateRangeText(startDate: Long, endDate: Long) {
+        try {
             val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             binding.dateRangeInput.setText(
                 "${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}"
             )
+        } catch (e: Exception) {
+            handleError(e, "Lỗi cập nhật text ngày tháng")
         }
-
-        dateRangePicker.show(childFragmentManager, "date_range_picker")
     }
 
     private fun setupRecyclerView() {
@@ -300,44 +394,55 @@ class ReportFragment : Fragment() {
 
     private fun updateLoadingState(isLoading: Boolean) {
         binding.apply {
-            overviewLoadingProgress.isVisible = isLoading
-            revenueLoadingProgress.isVisible = isLoading
-            appointmentsLoadingProgress.isVisible = isLoading
-            activitiesLoadingProgress.isVisible = isLoading
+            // Show/hide loading indicators
+            val loadingViews = listOf(
+                overviewLoadingProgress,
+                revenueLoadingProgress,
+                appointmentsLoadingProgress,
+                activitiesLoadingProgress
+            )
+            
+            loadingViews.forEach { it.isVisible = isLoading }
 
-            if (isLoading) {
-                overviewChart.isVisible = false
-                revenueChart.isVisible = false
-                appointmentsChart.isVisible = false
-                activitiesRecyclerView.isVisible = false
-            } else {
+            // Show/hide content based on current tab
+            if (!isLoading) {
                 updateVisibility(viewModel.selectedTab.value)
             }
+            
+            // Disable interaction while loading
+            tabLayout.isEnabled = !isLoading
+            dateRangeInput.isEnabled = !isLoading
+            btnExport.isEnabled = !isLoading
         }
     }
 
     private fun updateCharts(state: ReportState) {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-            val overviewData = prepareOverviewData(state.overviewStats)
-            val revenueData = prepareRevenueData(state.revenueStats)
-            val appointmentData = prepareAppointmentData(state.appointmentStats)
-
             withContext(Dispatchers.Main) {
                 binding.apply {
-                    // Update Overview
-                    overviewChart.isVisible = overviewData != null
-                    overviewEmptyView.isVisible = overviewData == null
-                    overviewData?.let { updateChart(overviewChart, it) }
+                    // Update Overview section với 2 biểu đồ tròn
+                    if (state.overviewStats != null) {
+                        userDistributionChart.isVisible = true
+                        appointmentStatusChart.isVisible = true
+                        overviewEmptyView.isVisible = false
+                        updateOverviewData(state.overviewStats)
+                    } else {
+                        userDistributionChart.isVisible = false
+                        appointmentStatusChart.isVisible = false
+                        overviewEmptyView.isVisible = true
+                    }
 
                     // Update Revenue
-                    revenueChart.isVisible = revenueData != null
-                    revenueEmptyView.isVisible = revenueData == null
-                    revenueData?.let { updateChart(revenueChart, it) }
+                    revenueChart.isVisible = state.revenueStats != null
+                    revenueEmptyView.isVisible = state.revenueStats == null
+                    state.revenueStats?.let { updateRevenueData(it) }
 
                     // Update Appointments
-                    appointmentsChart.isVisible = appointmentData != null
-                    appointmentsEmptyView.isVisible = appointmentData == null
-                    appointmentData?.let { updateChart(appointmentsChart, it) }
+                    appointmentsChart.isVisible = state.appointmentStats != null
+                    appointmentsEmptyView.isVisible = state.appointmentStats == null
+                    state.appointmentStats?.let { prepareAppointmentData(it) }?.let { 
+                        updateChart(appointmentsChart, it) 
+                    }
 
                     // Update Activities
                     activitiesEmptyView.isVisible = state.activities.isEmpty()
@@ -347,6 +452,7 @@ class ReportFragment : Fragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun updateActivities(activities: List<Activity>) {
         binding.apply {
             if (activities.isEmpty()) {
@@ -363,10 +469,19 @@ class ReportFragment : Fragment() {
     }
 
     private fun showError(error: String) {
-        SnackbarUtils.showErrorSnackbar(
-            view = binding.root,
-            message = error
-        )
+        view?.let { view ->
+            Snackbar.make(view, error, Snackbar.LENGTH_LONG)
+                .setAction("Thử lại") {
+                    loadInitialData()
+                }
+                .setActionTextColor(ContextCompat.getColor(requireContext(), R.color.primary))
+                .show()
+        }
+    }
+
+    private fun handleError(e: Exception, message: String) {
+        Timber.e(e, message)
+        showError("$message: ${e.localizedMessage}")
     }
 
     private fun updateChart(chart: Chart<*>?, data: Any?) {
@@ -402,32 +517,106 @@ class ReportFragment : Fragment() {
         }
     }
 
-    private fun prepareOverviewData(stats: OverviewStats?): BarData? {
-        return stats?.let {
-            try {
-                val entries = listOf(
-                    BarEntry(0f, it.totalDoctors.toFloat()),
-                    BarEntry(1f, it.totalPatients.toFloat()),
-                    BarEntry(2f, it.totalAppointments.toFloat()),
-                    BarEntry(3f, it.pendingAppointments.toFloat()),
-                    BarEntry(4f, it.completedAppointments.toFloat()),
-                    BarEntry(5f, it.cancelledAppointments.toFloat())
-                )
-
-                if (entries.all { entry -> entry.y == 0f }) {
-                    return null
+    @SuppressLint("SetTextI18n")
+    private fun updateRevenueData(stats: RevenueStats) {
+        try {
+            // Chuyển đổi dữ liệu từ MonthlyRevenueData sang Entry cho biểu đồ
+            val entries = stats.monthlyRevenue.entries
+                .sortedBy { it.key }
+                .mapIndexed { index, entry ->
+                    Entry(index.toFloat(), entry.value.totalAmount.toFloat())
                 }
 
-                val dataSet = BarDataSet(entries, "Thống kê").apply {
-                    colors = listOf(
-                        ContextCompat.getColor(requireContext(), R.color.doctor_color),
-                        ContextCompat.getColor(requireContext(), R.color.patient_color),
-                        ContextCompat.getColor(requireContext(), R.color.appointment_color),
-                        ContextCompat.getColor(requireContext(), R.color.pending_color),
-                        ContextCompat.getColor(requireContext(), R.color.completed_color),
-                        ContextCompat.getColor(requireContext(), R.color.cancelled_color)
+            val dataSet = LineDataSet(entries, "Doanh thu").apply {
+                // Gradient colors
+                val gradientColors = listOf(
+                    ContextCompat.getColor(requireContext(), R.color.revenue_gradient_start),
+                    ContextCompat.getColor(requireContext(), R.color.revenue_gradient_end)
+                )
+                setGradientColor(gradientColors[0], gradientColors[1])
+                
+                // Line styling
+                color = ContextCompat.getColor(requireContext(), R.color.revenue_line_color)
+                lineWidth = 2.5f
+                
+                // Point styling
+                setCircleColor(ContextCompat.getColor(requireContext(), R.color.revenue_point_color))
+                circleRadius = 5f
+                circleHoleRadius = 2.5f
+                
+                // Value formatting
+                valueTextSize = 11f
+                valueTextColor = ContextCompat.getColor(requireContext(), R.color.revenue_text_color)
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        return formatCurrencyCompact(value.toLong())
+                    }
+                }
+                
+                mode = LineDataSet.Mode.CUBIC_BEZIER
+                setDrawFilled(true)
+                fillAlpha = 50
+            }
+
+            // Thêm dataset phụ cho số lượng cuộc hẹn
+            val appointmentEntries = stats.monthlyRevenue.entries
+                .sortedBy { it.key }
+                .mapIndexed { index, entry ->
+                    Entry(index.toFloat(), entry.value.appointmentsCount.toFloat())
+                }
+
+            val appointmentDataSet = LineDataSet(appointmentEntries, "Số cuộc hẹn").apply {
+                color = ContextCompat.getColor(requireContext(), R.color.appointment_line_color)
+                setCircleColor(ContextCompat.getColor(requireContext(), R.color.appointment_point_color))
+                lineWidth = 2f
+                circleRadius = 4f
+                valueTextSize = 10f
+                axisDependency = YAxis.AxisDependency.RIGHT
+            }
+
+            revenueChart?.apply {
+                clear()
+                
+                // Set multiple datasets
+                data = LineData(listOf(dataSet, appointmentDataSet))
+                
+                // X-axis configuration
+                xAxis.apply {
+                    valueFormatter = IndexAxisValueFormatter(
+                        stats.monthlyRevenue.keys.map { formatMonthLabel(it) }
                     )
-                    valueTextSize = 12f
+                    position = XAxis.XAxisPosition.BOTTOM
+                    granularity = 1f
+                    setDrawGridLines(false)
+                    textColor = ContextCompat.getColor(requireContext(), R.color.axis_text_color)
+                    textSize = 10f
+                }
+
+                // Left Y-axis (Revenue)
+                axisLeft.apply {
+                    val maxRevenue = stats.monthlyRevenue.values.maxOfOrNull { it.totalAmount } ?: 0.0
+                    axisMaximum = (maxRevenue * 1.2).toFloat()
+                    axisMinimum = 0f
+                    setDrawGridLines(true)
+                    gridColor = ContextCompat.getColor(requireContext(), R.color.grid_color)
+                    gridLineWidth = 0.5f
+                    textColor = ContextCompat.getColor(requireContext(), R.color.axis_text_color)
+                    textSize = 10f
+                    valueFormatter = object : ValueFormatter() {
+                        override fun getFormattedValue(value: Float): String {
+                            return formatCurrencyCompact(value.toLong())
+                        }
+                    }
+                }
+
+                // Right Y-axis (Appointments)
+                axisRight.apply {
+                    isEnabled = true
+                    val maxAppointments = stats.monthlyRevenue.values.maxOfOrNull { it.appointmentsCount } ?: 0
+                    axisMaximum = (maxAppointments * 1.2).toFloat()
+                    axisMinimum = 0f
+                    textColor = ContextCompat.getColor(requireContext(), R.color.appointment_text_color)
+                    textSize = 10f
                     valueFormatter = object : ValueFormatter() {
                         override fun getFormattedValue(value: Float): String {
                             return value.toInt().toString()
@@ -435,55 +624,64 @@ class ReportFragment : Fragment() {
                     }
                 }
 
-                BarData(dataSet).apply {
-                    barWidth = 0.7f
-                    // Thêm labels cho trục X
-                    setValueFormatter(object : ValueFormatter() {
-                        override fun getAxisLabel(value: Float, axis: AxisBase): String {
-                            return when (value.toInt()) {
-                                0 -> "Bác sĩ"
-                                1 -> "Bệnh nhân"
-                                2 -> "Tổng cuộc hẹn"
-                                3 -> "Chờ khám"
-                                4 -> "Đã khám"
-                                5 -> "Đã hủy"
-                                else -> ""
-                            }
-                        }
-                    })
+                // Legend configuration
+                legend.apply {
+                    isEnabled = true
+                    textSize = 12f
+                    form = Legend.LegendForm.LINE
+                    horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                    verticalAlignment = Legend.LegendVerticalAlignment.TOP
+                    orientation = Legend.LegendOrientation.HORIZONTAL
+                    setDrawInside(false)
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Error preparing overview data")
-                null
+
+                // Interaction
+                setTouchEnabled(true)
+                setPinchZoom(true)
+                setScaleEnabled(true)
+                
+                // Animation
+                animateXY(1000, 1000)
+                
+                invalidate()
             }
+
+            // Hiển thị thông tin tổng quan
+            binding.apply {
+                val totalRevenue = stats.monthlyRevenue.values.sumOf { it.totalAmount }
+                val totalAppointments = stats.monthlyRevenue.values.sumOf { it.appointmentsCount }
+                val averageRevenue = if (totalAppointments > 0) {
+                    totalRevenue / totalAppointments
+                } else 0.0
+
+                tvTotalRevenue.text = formatCurrencyCompact(totalRevenue.toLong())
+                tvTotalAppointments.text = "$totalAppointments appointments"
+                tvAverageRevenue.text = "Avg: ${formatCurrencyCompact(averageRevenue.toLong())}/appointment"
+            }
+
+        } catch (e: Exception) {
+            Timber.e(e, "Error updating revenue chart")
+            showError("Lỗi cập nhật biểu đồ doanh thu")
         }
     }
 
-    private fun prepareRevenueData(stats: RevenueStats?): BarData? {
-        return stats?.let {
-            val entries = it.monthlyRevenue.entries
-                .sortedBy { entry -> entry.key }
-                .mapIndexed { index, entry ->
-                    BarEntry(index.toFloat(), entry.value.toFloat())
-                }
+    private fun formatMonthLabel(monthKey: String): String {
+        return try {
+            // Chuyển đổi format từ "2025-03" thành "T3/2025"
+            val parts = monthKey.split("-")
+            "T${parts[1]}/${parts[0]}"
+        } catch (e: Exception) {
+            monthKey
+        }
+    }
 
-            if (entries.isEmpty() || entries.all { entry -> entry.y == 0f }) {
-                return null
-            }
-
-            val dataSet = BarDataSet(entries, "Doanh thu theo tháng").apply {
-                color = ContextCompat.getColor(requireContext(), R.color.chart_bar_color)
-                valueTextSize = 12f
-                valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        return ChartUtils.formatCurrency(value)
-                    }
-                }
-            }
-
-            BarData(dataSet).apply {
-                barWidth = 0.7f
-            }
+    // Hàm hỗ trợ format tiền tệ dạng rút gọn
+    private fun formatCurrencyCompact(amount: Long): String {
+        return "$" + when {
+            amount >= 1_000_000_000 -> "%.1fB".format(amount / 1_000_000_000.0)
+            amount >= 1_000_000 -> "%.1fM".format(amount / 1_000_000.0)
+            amount >= 1_000 -> "%.1fK".format(amount / 1_000.0)
+            else -> amount.toString()
         }
     }
 
@@ -583,12 +781,14 @@ class ReportFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        overviewChart = null
+        userDistributionChart = null
+        appointmentStatusChart = null
         revenueChart = null
         appointmentsChart = null
         _binding = null
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -607,6 +807,7 @@ class ReportFragment : Fragment() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun loadInitialData() {
         // Set default date range to last 30 days
         val endDate = System.currentTimeMillis()

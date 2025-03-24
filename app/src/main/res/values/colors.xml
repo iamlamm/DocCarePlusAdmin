@@ -46,7 +46,22 @@
     <color name="unread_notification_bg">#F5F5F5</color>
     <color name="red1">#c0392b</color>
 
-    <color name="colorPrimaryLight">#80246BFD</color>  
-    <color name="chart_line_color">#246BFD</color>     
-    <color name="chart_fill_color">#1A246BFD</color>   
+    <color name="colorPrimaryLight">#80246BFD</color>
+    <color name="chart_line_color">#246BFD</color>
+    <color name="chart_fill_color">#1A246BFD</color>
+    <color name="chart_bar_color">#4CAF50</color>
+    <!--    <color name="chart_line_color">#2196F3</color>-->
+    <color name="chart_color_1">#2196F3</color>
+    <color name="chart_color_2">#4CAF50</color>
+    <color name="chart_color_3">#FFC107</color>
+    <color name="chart_color_4">#9C27B0</color>
+    <color name="chart_color_5">#F44336</color>
+
+    <!-- Chart Colors -->
+    <color name="doctor_color">#4CAF50</color>      <!-- Material Green -->
+    <color name="patient_color">#2196F3</color>     <!-- Material Blue -->
+    <color name="appointment_color">#9C27B0</color> <!-- Material Purple -->
+    <color name="pending_color">#FFC107</color>     <!-- Material Amber -->
+    <color name="completed_color">#00BCD4</color>   <!-- Material Cyan -->
+    <color name="cancelled_color">#F44336</color>   <!-- Material Red -->
 </resources>

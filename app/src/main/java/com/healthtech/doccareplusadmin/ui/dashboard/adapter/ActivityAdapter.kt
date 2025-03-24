@@ -27,7 +27,7 @@ class ActivityAdapter :
 
     override fun onBindViewHolder(holder: ActivityViewHolder, position: Int) {
         val activity = getItem(position)
-        Timber.d("Binding activity at position $position: ${activity.id}, title: ${activity.title}")
+        Timber.d("Binding activity at position $position: ${activity.id}")
         holder.bind(activity)
     }
 
@@ -35,7 +35,6 @@ class ActivityAdapter :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(activity: Activity) {
-            Timber.d("Binding activity: ${activity.id}")
             binding.apply {
                 tvActivityTitle.text = activity.title
                 tvActivityDescription.text = activity.description

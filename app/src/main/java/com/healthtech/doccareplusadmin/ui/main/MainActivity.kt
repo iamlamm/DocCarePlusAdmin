@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.allCategoriesFragment -> binding.bottomNavigation.selectedItemId = R.id.nav_categories
                 R.id.allDoctorsFragment -> binding.bottomNavigation.selectedItemId = R.id.nav_doctors
                 R.id.allUsersFragment -> binding.bottomNavigation.selectedItemId = R.id.nav_users
+                R.id.reportFragment -> binding.bottomNavigation.selectedItemId = R.id.nav_reports
             }
         }
     }
@@ -145,8 +146,16 @@ class MainActivity : AppCompatActivity() {
                     }
                     R.id.nav_reports -> {
                         if (viewModel.hasPermission("VIEW_REPORTS")) {
-                            // TODO: Implement navigation to reports fragment
-                            showFeatureNotImplementedMessage()
+                            Log.d("MainActivity", "Navigating to reportFragment")
+                            if (navController.currentDestination?.id != R.id.reportFragment) {
+                                // Nếu đang ở dashboard, sử dụng action
+                                if (navController.currentDestination?.id == R.id.dashboardFragment) {
+                                    navController.navigate(R.id.action_dashboard_to_report)
+                                } else {
+                                    // Nếu không, navigate trực tiếp
+                                    navController.navigate(R.id.reportFragment)
+                                }
+                            }
                             true
                         } else {
                             showPermissionDeniedMessage()

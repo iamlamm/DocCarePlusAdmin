@@ -70,6 +70,8 @@ android {
 }
 
 dependencies {
+    // PDF
+    implementation("com.itextpdf:itextpdf:5.5.13.3")
     // Chart
     implementation(libs.mpandroidchart)
     // Cloudinary

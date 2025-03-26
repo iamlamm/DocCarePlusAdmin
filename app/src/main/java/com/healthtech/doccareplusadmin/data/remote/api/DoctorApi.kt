@@ -67,7 +67,7 @@ class DoctorApi @Inject constructor(
                 return Result.failure(Exception("Doctor already exists with this email"))
             }
             val authResult = try {
-                auth.createUserWithEmailAndPassword(doctor.email, Constants.DEFAULT_USER_PASSWORD)
+                auth.createUserWithEmailAndPassword(doctor.email, Constants.DEFAULT_DOCTOR_PASSWORD)
                     .await()
             } catch (e: FirebaseAuthUserCollisionException) {
                 return Result.failure(Exception("Email already registered"))
@@ -91,6 +91,18 @@ class DoctorApi @Inject constructor(
 
             val finalDoctor = doctor.copy(id = doctorId)
             doctorRef.child(doctorId).setValue(finalDoctor).await()
+
+            val allDays =
+                listOf("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+            val randomWorkingDays = allDays.shuffled().take(4)
+
+            val scheduleRef = database.getReference("doctorSchedules")
+            val schedule = mapOf(
+                "doctorId" to doctorId,
+                "workingDays" to randomWorkingDays
+            )
+
+            scheduleRef.child(doctorId).setValue(schedule).await()
 
             Result.success(Unit)
         } catch (e: Exception) {

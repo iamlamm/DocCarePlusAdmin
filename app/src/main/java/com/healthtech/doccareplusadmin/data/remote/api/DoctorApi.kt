@@ -24,7 +24,6 @@ class DoctorApi @Inject constructor(
     private val database: FirebaseDatabase,
     private val auth: FirebaseAuth
 ) {
-    private val TAG = "DoctorApi"
     private val doctorRef = database.getReference("doctors")
 
     fun getDoctors(): Flow<List<Doctor>> = callbackFlow {
@@ -103,6 +102,12 @@ class DoctorApi @Inject constructor(
             )
 
             scheduleRef.child(doctorId).setValue(schedule).await()
+
+//            try {
+//                ZegoUtils.activateDoctor(doctorId, doctor.name, doctor.avatar)
+//            } catch (e: Exception) {
+//                Timber.e(e, "Error activating Zego for doctor")
+//            }
 
             Result.success(Unit)
         } catch (e: Exception) {

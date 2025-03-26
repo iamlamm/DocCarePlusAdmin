@@ -48,7 +48,7 @@
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Notifications"
-                android:src="@drawable/ic_notification"
+                android:src="@drawable/bell_icon"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 

@@ -1,5 +1,6 @@
 package  com.healthtech.doccareplusadmin.di
 
+import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import com.healthtech.doccareplusadmin.utils.NetworkUtils

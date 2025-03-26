@@ -66,8 +66,10 @@ class AllDoctorsAdapter : RecyclerView.Adapter<AllDoctorsAdapter.AllDoctorsViewH
                 tvDoctorRate.text = doctor.rating.toString()
                 tvDoctorReviewCount.text = "(${doctor.reviews})"
                 tvDoctorFee.text = "$${doctor.fee}"
+                tvDoctorEmail.text = doctor.email
+                tvDoctorPhone.text = doctor.phoneNumber
+                tvDoctorAddress.text = doctor.address
 
-                // Tối ưu Glide với caching
                 val requestOptions = RequestOptions()
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .error(R.drawable.doctor_avatar_1)

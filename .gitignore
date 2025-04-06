@@ -13,4 +13,4 @@
 .externalNativeBuild
 .cxx
 local.properties
-/build-cache/
+"app/src/main/java/com/healthtech/doccareplus/utils/Constants.kt" 
